@@ -1,0 +1,10 @@
+[package]
+name = "pundit"
+version = "0.1.0"
+authors = ["tehforsch <Tonipeter92@googlemail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+regex = "1"

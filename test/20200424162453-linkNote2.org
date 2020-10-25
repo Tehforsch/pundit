@@ -1,0 +1,4 @@
+#+TITLE: linkNote2
+[[file:20200424162358-note1.org][note1]]
+[[file:20200424162405-note5.org][note5]]
+[[file:20200424162453-linkNote2.org][linkNote2]]

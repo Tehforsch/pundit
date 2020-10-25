@@ -1,0 +1,3 @@
+#+TITLE: linkNote1
+[[file:20200424162358-note1.org][note1]]
+[[file:20200424162405-note5.org][here is a custom text for this link note2]]
