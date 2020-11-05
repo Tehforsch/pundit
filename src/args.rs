@@ -18,8 +18,11 @@ pub struct Opts {
 #[derive(Clap, Debug)]
 pub enum SubCommand {
     List(ListNotes),
-    Backlinks(Backlinks),
+    Backlinks(ListBacklinks),
     Find(FindNoteInteractively),
+    Verify(VerifyNotes),
+    Delete(DeleteNote),
+    Rename(RenameNote),
 }
 
 /// List notes.
@@ -29,16 +32,37 @@ pub struct ListNotes {
     pub filter: Option<String>,
 }
 
-/// A subcommand for controlling testing
+/// List all notes that contain a link to the note
 #[derive(Clap, Debug)]
-pub struct Backlinks {
+pub struct ListBacklinks {
     /// The filename for which to show the backlinks
     pub filename: PathBuf,
 }
 
-/// A subcommand for controlling testing
+/// Select a note from the list of all notes via fzf
 #[derive(Clap, Debug)]
 pub struct FindNoteInteractively {
     /// Optional: Only list notes which contain this string in the title
     pub filter: Option<String>,
+}
+
+
+/// Verify that all links are to valid files
+#[derive(Clap, Debug)]
+pub struct VerifyNotes {
+}
+
+/// Delete a note. This will only delete the note if no other notes link to it. Otherwise it will print a list of notes linking to this note.
+#[derive(Clap, Debug)]
+pub struct DeleteNote {
+    /// The path to the note which to delete
+    pub filename: PathBuf
+}
+
+/// Rename a note
+#[derive(Clap, Debug)]
+pub struct RenameNote {
+    /// The path to the note which to rename
+    pub filename: PathBuf,
+    pub new_name: String
 }
