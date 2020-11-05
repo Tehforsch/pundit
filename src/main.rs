@@ -1,7 +1,7 @@
 use std::fs;
 use std::str;
 use std::io;
-use std::path::{Path,PathBuf,StripPrefixError};
+use std::path::{Path,PathBuf};
 use std::error::Error;
 
 pub mod args;
@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         None => PathBuf::from("test").canonicalize()?,
         Some(ref f) => f.clone().canonicalize()?
     };
-    set_current_dir(&note_folder);
+    set_current_dir(&note_folder)?;
     let notes = read_notes(&PathBuf::from("."))?;
     run(&entry_folder, &note_folder, args, notes)?;
     Ok(())
@@ -82,7 +82,7 @@ fn find_note_interactively(notes: &[Note], filter_str: Option<&str>) {
     let note = select_note_with_fzf(&notes_filtered_vec);
 }
 
-fn select_note_with_fzf<'a>(notes: &'a[&Note]) -> &'a Note{
+fn select_note_with_fzf<'a>(notes: &'a[&Note]) -> Note{
     let strs: Vec<String> = notes.iter().enumerate().map(|(i, note)| format!("{};{};{}", i, note.title, note.filename.to_str().unwrap())).collect();
     let content = strs.join("\n");
     let output = run_fzf_on_string(&content);
@@ -90,8 +90,19 @@ fn select_note_with_fzf<'a>(notes: &'a[&Note]) -> &'a Note{
     let query = split[0];
     let note_info = split[1];
     let note_info_split: Vec<&str> = note_info.split(";").collect();
-    let index = note_info_split[0].parse::<usize>().unwrap();
-    notes[index]
+    dbg!(&note_info_split);
+    if note_info_split.len() == 3 {
+        let index = note_info_split[0].parse::<usize>().unwrap();
+        let note = notes[index];
+        assert_eq!(note.filename.to_str().unwrap(), note_info_split[2]);
+        (*note).clone()
+    }
+    else {
+        let new_note_title = query.replace("\n", "");
+        let note = Note::from_title(&new_note_title);
+        note.write_without_contents();
+        note
+    }
 }
 
 fn run_fzf_on_string(content: &str) -> String {
@@ -146,8 +157,24 @@ fn verify_notes(notes: &[Note]) {
 fn rename_note(notes: &[Note], note: &Note, new_name: &str) {
 }
 
+fn delete_file(filename: &Path) {
+    println!("Deleting {}", filename.to_str().unwrap());
+}
+
 fn delete_note(notes: &[Note], note: &Note) {
-    
+    let mut backlink_notes = get_backlinks(notes, note);
+    let next = backlink_notes.next();
+    match next {
+        None => delete_file(&note.filename),
+        Some(note) => {
+            println!("There are links to this note: ");
+            println!("\t{}", note.title);
+            for backlink_note in backlink_notes {
+                println!("\t{}", backlink_note.title);
+            }
+            println!("Not deleting note.");
+        }
+    }
 }
 
 fn get_args() -> Opts {
@@ -156,7 +183,7 @@ fn get_args() -> Opts {
 
 fn transform_passed_path(entry_folder: &Path, note_folder: &Path, path: &Path) -> Result<PathBuf, NoteNotInNoteFolderError> {
     let absolute_path = entry_folder.join(path).canonicalize();
-    Ok(absolute_path.unwrap().strip_prefix(note_folder.canonicalize().unwrap()).map_err(|err| NoteNotInNoteFolderError{ path: path.to_path_buf()})?.to_path_buf())
+    Ok(absolute_path.unwrap().strip_prefix(note_folder.canonicalize().unwrap()).map_err(|_| NoteNotInNoteFolderError{ path: path.to_path_buf()})?.to_path_buf())
 }
 
 fn run(entry_folder: &Path, note_folder: &Path, args: Opts, notes: Vec<Note>) -> Result<(), NoteNotInNoteFolderError>{

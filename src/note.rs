@@ -10,7 +10,7 @@ struct InvalidNoteError;
 #[derive(Debug, Clone)]
 struct InvalidTitleError;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Note {
     pub filename: PathBuf,
     pub title: String,
@@ -27,11 +27,10 @@ impl Note {
         }
     }
 
-    pub fn from_title(folder: &Path, title: &str) -> Note {
-        let file_name = get_filename_from_title(&title);
-        let file_path = folder.join(&file_name);
+    pub fn from_title_and_date(title: &str, date: ) -> Note {
+        let filename = Path::new(&get_filename_from_title(&title)).to_path_buf();
         Note {
-            filename: file_path,
+            filename: filename,
             title: title.to_string(),
             links: vec![],
         }

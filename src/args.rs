@@ -2,9 +2,8 @@ use clap::Clap;
 use std::path::PathBuf;
 
 /// Manage notes and links between them.
-/// as do all doc strings on fields
 #[derive(Clap)]
-#[clap(version = "1.0", author = "Toni Peter")]
+#[clap(version = "0.1.0", author = "Toni Peter")]
 pub struct Opts {
     /// A level of verbosity, and can be used multiple times
     #[clap(short, long, parse(from_occurrences))]
