@@ -63,26 +63,26 @@ pub struct AnkiCollection {
     tags: String, // text not null, a cache of tags used in the collection (This list is displayed in the browser. Potentially at other place)
 }
 
-pub fn run_anki() -> rusqlite::Result<()> {
-    let path = Path::new("../collection.anki2");
+pub fn run_anki(path: &Path) -> rusqlite::Result<()> {
     let connection = Connection::open(path).unwrap();
     let _notes = read_notes(&connection)?;
     let collection = read_collection(&connection)?;
-    let arbitrary_model_name = "MachineLearning"; // TODO
-    let arbitrary_deck_name = "All::ComputerScience"; // TODO
+    let arbitrary_model_name = "Spanish";
+    let arbitrary_deck_name = "Spanish";
     let (anki_note, anki_cards) = get_new_anki_note_and_cards(
         &collection,
-        vec!["A".to_string(), "B".to_string()],
+        vec!["Some front".to_string(), "Some back".to_string()],
         arbitrary_model_name.to_string(),
         arbitrary_deck_name.to_string(),
     )
     .expect("Name does not exist.");
     let num_added = add_anki_note(&connection, anki_note)?;
     println!("Added {} notes.", num_added);
+    let mut num_cards_added = 0;
     for anki_card in anki_cards {
-        let num_cards_added = add_anki_card(&connection, anki_card)?;
-        println!("Added {} cards.", num_cards_added);
+        num_cards_added += add_anki_card(&connection, anki_card)?;
     }
+    println!("Added {} cards.", num_cards_added);
     close_connection(connection)?;
     Ok(())
 }
@@ -144,12 +144,13 @@ fn get_new_anki_cards(model: &AnkiModel, deck: &AnkiDeck, anki_note: &AnkiNote) 
     model
         .tmpls
         .iter()
-        .map(|template| AnkiCard {
-            id: unix_time, // Not super happy with this - what if we create those cards less than 1 ms apart?! But this is the system so I'm not sure what to do here.
+        .enumerate()
+        .map(|(i, template)| AnkiCard {
+            id: unix_time + (i as i64), // Make sure this is unique
             nid: anki_note.id,
             did: deck.id,
             ord: template.ord,
-            mod_: unix_time,
+            mod_: get_unix_time(),
             usn: -1,           // force push
             type_: 0,          // new card
             queue: 0,          // new card

@@ -261,8 +261,8 @@ fn run(
             delete_note(&notes, &note);
         }
         #[cfg(feature = "anki")]
-        SubCommand::Anki(_) => {
-            crate::anki::run_anki().expect("Failed to update anki database");
+        SubCommand::Anki(l) => {
+            crate::anki::run_anki(&l.database).expect("Failed to update anki database");
         }
     }
     Ok(())

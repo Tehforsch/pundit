@@ -69,4 +69,6 @@ pub struct RenameNote {
 /// Update the anki contents from the notes.
 #[derive(Clap, Debug)]
 #[cfg(feature = "anki")]
-pub struct Anki {}
+pub struct Anki {
+    pub database: PathBuf,
+}
