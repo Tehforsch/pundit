@@ -4,11 +4,13 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::str;
 
+pub mod anki;
+pub mod anki_deck;
+pub mod anki_model;
 pub mod args;
 pub mod config;
 pub mod errors;
 pub mod note;
-pub mod anki;
 
 use crate::args::{Opts, SubCommand};
 use crate::errors::NoteNotInNoteFolderError;
@@ -24,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();
     let entry_folder = current_dir()?;
     let note_folder = match args.folder {
-    None => PathBuf::from("test").canonicalize()?,
+        None => PathBuf::from("test").canonicalize()?,
         Some(ref f) => f.clone().canonicalize()?,
     };
     set_current_dir(&note_folder)?;
@@ -77,8 +79,10 @@ fn list_backlinks(notes: &[Note], note: &Note) {
 fn get_backlinks<'a>(notes: &'a [Note], note: &'a Note) -> impl Iterator<Item = &'a Note> {
     let selected_filename = note.filename.to_str().unwrap();
     notes.iter().filter(move |n| {
-        n.links.iter().any(|link| link.filename.to_str().unwrap() == selected_filename)
-        })
+        n.links
+            .iter()
+            .any(|link| link.filename.to_str().unwrap() == selected_filename)
+    })
 }
 
 fn find_note_interactively(notes: &[Note], filter_str: Option<&str>) -> Note {
@@ -174,7 +178,7 @@ fn verify_notes(notes: &[Note]) {
 }
 
 // fn rename_note(_notes: &[Note], note: &Note, new_name: &str) {
-    // dbg!("Not implemented yet.");
+// dbg!("Not implemented yet.");
 // }
 
 fn delete_file(filename: &Path) {
@@ -242,9 +246,9 @@ fn run(
         }
         SubCommand::Rename(_l) => {
             // let note = Note::from_filename(&transform_passed_path(
-                // &entry_folder,
-                // note_folder,
-                // &l.filename,
+            // &entry_folder,
+            // note_folder,
+            // &l.filename,
             // )?);
             // rename_note(&notes, &note, &l.new_name);
         }

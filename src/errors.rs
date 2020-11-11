@@ -18,3 +18,16 @@ impl fmt::Display for NoteNotInNoteFolderError {
         )
     }
 }
+
+#[derive(Debug)]
+pub struct InvalidNameError {
+    pub name: String,
+}
+
+impl Error for InvalidNameError {}
+
+impl fmt::Display for InvalidNameError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Name is not valid: {}", self.name)
+    }
+}

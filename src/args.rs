@@ -23,7 +23,7 @@ pub enum SubCommand {
     Delete(DeleteNote),
     Rename(RenameNote),
     #[cfg(feature = "anki")]
-    Anki(Anki)
+    Anki(Anki),
 }
 
 /// List notes.
@@ -47,17 +47,15 @@ pub struct FindNoteInteractively {
     pub filter: Option<String>,
 }
 
-
 /// Verify that all links are to valid files
 #[derive(Clap, Debug)]
-pub struct VerifyNotes {
-}
+pub struct VerifyNotes {}
 
 /// Delete a note. This will only delete the note if no other notes link to it. Otherwise it will print a list of notes linking to this note.
 #[derive(Clap, Debug)]
 pub struct DeleteNote {
     /// The path to the note which to delete
-    pub filename: PathBuf
+    pub filename: PathBuf,
 }
 
 /// Rename a note
@@ -65,11 +63,10 @@ pub struct DeleteNote {
 pub struct RenameNote {
     /// The path to the note which to rename
     pub filename: PathBuf,
-    pub new_name: String
+    pub new_name: String,
 }
 
 /// Update the anki contents from the notes.
 #[derive(Clap, Debug)]
 #[cfg(feature = "anki")]
-pub struct Anki {
-}
+pub struct Anki {}
