@@ -6,6 +6,12 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+default = ["anki"]
+anki = ["rusqlite", "rust-crypto"]
+
 [dependencies]
 regex = "1"
 clap = "3.0.0-beta.2"
+rusqlite = {version = "0.24.1", optional=true}
+rust-crypto = {version = "^0.2", optional=true}

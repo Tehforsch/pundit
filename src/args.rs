@@ -22,6 +22,8 @@ pub enum SubCommand {
     Verify(VerifyNotes),
     Delete(DeleteNote),
     Rename(RenameNote),
+    #[cfg(feature = "anki")]
+    Anki(Anki)
 }
 
 /// List notes.
@@ -64,4 +66,10 @@ pub struct RenameNote {
     /// The path to the note which to rename
     pub filename: PathBuf,
     pub new_name: String
+}
+
+/// Update the anki contents from the notes.
+#[derive(Clap, Debug)]
+#[cfg(feature = "anki")]
+pub struct Anki {
 }

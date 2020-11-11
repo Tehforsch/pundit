@@ -27,10 +27,10 @@ impl Note {
         }
     }
 
-    pub fn from_title_and_date(title: &str, date: ) -> Note {
+    pub fn from_title(title: &str) -> Note {
         let filename = Path::new(&get_filename_from_title(&title)).to_path_buf();
         Note {
-            filename: filename,
+            filename,
             title: title.to_string(),
             links: vec![],
         }
