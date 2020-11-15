@@ -5,6 +5,8 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 
+use anyhow::{anyhow, Context, Result};
+
 #[derive(Debug, Clone)]
 struct InvalidNoteError;
 #[derive(Debug, Clone)]
@@ -18,13 +20,14 @@ pub struct Note {
 }
 
 impl Note {
-    pub fn from_filename(filename: &Path) -> Note {
-        let contents = fs::read_to_string(filename).expect("Could not read file");
-        Note {
+    pub fn from_filename(filename: &Path) -> Result<Note> {
+        let contents = fs::read_to_string(filename)?;
+        Ok(Note {
             filename: filename.to_path_buf(),
-            title: get_title(&contents).unwrap(),
+            title: get_title(&contents)
+                .context(format!("Opening {}", filename.to_str().unwrap()))?,
             links: get_links(&contents),
-        }
+        })
     }
 
     pub fn from_title(title: &str) -> Note {
@@ -44,9 +47,9 @@ impl Note {
     }
 }
 
-fn get_title(contents: &str) -> Result<String, InvalidNoteError> {
+fn get_title(contents: &str) -> Result<String> {
     if !contents.starts_with(COMMENT_STRING) {
-        Err(InvalidNoteError)
+        Err(anyhow!("Note does not contain title"))
     } else {
         let title = contents
             .lines()

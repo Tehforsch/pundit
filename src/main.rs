@@ -1,3 +1,4 @@
+use anyhow::{anyhow, Result};
 use std::error::Error;
 use std::fs;
 use std::io;
@@ -5,15 +6,16 @@ use std::path::{Path, PathBuf};
 use std::str;
 
 pub mod anki;
+pub mod anki_card;
+pub mod anki_collection;
 pub mod anki_deck;
 pub mod anki_model;
+pub mod anki_note;
 pub mod args;
 pub mod config;
-pub mod errors;
 pub mod note;
 
 use crate::args::{Opts, SubCommand};
-use crate::errors::NoteNotInNoteFolderError;
 use crate::note::Note;
 use clap::Clap;
 
@@ -35,13 +37,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn read_notes(note_folder: &Path) -> io::Result<Vec<Note>> {
+fn read_notes(note_folder: &Path) -> Result<Vec<Note>> {
     let mut notes = vec![];
     for entry in fs::read_dir(note_folder)? {
         let entry = entry?;
         let path = entry.path();
         if path.is_file() {
-            notes.push(Note::from_filename(&path));
+            notes.push(Note::from_filename(&path)?);
         }
     }
     Ok(notes)
@@ -205,27 +207,16 @@ fn get_args() -> Opts {
     Opts::parse()
 }
 
-fn transform_passed_path(
-    entry_folder: &Path,
-    note_folder: &Path,
-    path: &Path,
-) -> Result<PathBuf, NoteNotInNoteFolderError> {
+fn transform_passed_path(entry_folder: &Path, note_folder: &Path, path: &Path) -> Result<PathBuf> {
     let absolute_path = entry_folder.join(path).canonicalize();
     Ok(absolute_path
         .unwrap()
         .strip_prefix(note_folder.canonicalize().unwrap())
-        .map_err(|_| NoteNotInNoteFolderError {
-            path: path.to_path_buf(),
-        })?
+        .map_err(|_| anyhow!("Note not in folder: {}", path.to_str().unwrap()))?
         .to_path_buf())
 }
 
-fn run(
-    entry_folder: &Path,
-    note_folder: &Path,
-    args: Opts,
-    notes: Vec<Note>,
-) -> Result<(), NoteNotInNoteFolderError> {
+fn run(entry_folder: &Path, note_folder: &Path, args: Opts, notes: Vec<Note>) -> Result<()> {
     match args.subcmd {
         SubCommand::List(l) => {
             list_notes(&notes, l.filter.as_deref());
@@ -236,7 +227,7 @@ fn run(
                 note_folder,
                 &l.filename,
             )?);
-            list_backlinks(&notes, &note);
+            list_backlinks(&notes, &note?);
         }
         SubCommand::Find(l) => {
             find_note_interactively(&notes, l.filter.as_deref());
@@ -258,7 +249,7 @@ fn run(
                 note_folder,
                 &l.filename,
             )?);
-            delete_note(&notes, &note);
+            delete_note(&notes, &note?);
         }
         #[cfg(feature = "anki")]
         SubCommand::Anki(l) => {
