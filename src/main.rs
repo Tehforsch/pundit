@@ -1,7 +1,6 @@
 use anyhow::{anyhow, Result};
 use std::error::Error;
 use std::fs;
-use std::io;
 use std::path::{Path, PathBuf};
 use std::str;
 
@@ -252,9 +251,7 @@ fn run(entry_folder: &Path, note_folder: &Path, args: Opts, notes: Vec<Note>) ->
             delete_note(&notes, &note?);
         }
         #[cfg(feature = "anki")]
-        SubCommand::Anki(l) => {
-            crate::anki::run_anki(&l.database).expect("Failed to update anki database");
-        }
+        SubCommand::Anki(l) => crate::anki::update_anki(&l.database, &notes)?,
     }
     Ok(())
 }

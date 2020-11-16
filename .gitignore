@@ -3,3 +3,7 @@ test2
 test3
 database/
 collection.anki2
+test/noteWithLotsOfWords.org
+fullDatabase
+pack
+run.sh

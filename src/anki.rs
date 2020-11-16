@@ -1,11 +1,15 @@
+use crate::Note;
 use crypto::digest::Digest;
 use crypto::sha1::Sha1;
+use regex::Regex;
 use rusqlite::{params, Connection};
+use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::path::Path;
+use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 
 use crate::anki_card::AnkiCard;
 use crate::anki_collection::AnkiCollection;
@@ -13,84 +17,194 @@ use crate::anki_deck::{get_anki_decks_from_json, AnkiDeck};
 use crate::anki_model::{get_anki_models_from_json, AnkiModel};
 use crate::anki_note::AnkiNote;
 
-pub fn run_anki(path: &Path) -> Result<()> {
+#[derive(Debug)]
+pub struct AnkiNoteInfo {
+    id: i64,
+    fields: HashMap<String, String>,
+    model_name: String,
+    deck_name: String,
+}
+
+pub fn update_anki(path: &Path, notes: &[Note]) -> Result<()> {
     let connection = Connection::open(path).unwrap();
-    let _notes = read_notes(&connection)?;
+    let anki_notes = read_notes(&connection)?;
     let collection = read_collection(&connection)?;
-    let arbitrary_model_name = "Spanish";
-    let arbitrary_deck_name = "Spanish";
-    let (anki_note, anki_cards) = get_new_anki_note_and_cards(
-        &collection,
-        vec!["Some front".to_string(), "Some back".to_string()],
-        arbitrary_model_name.to_string(),
-        arbitrary_deck_name.to_string(),
-    )
-    .expect("Name does not exist.");
-    let num_added = add_anki_note(&connection, anki_note)?;
-    println!("Added {} notes.", num_added);
-    let mut num_cards_added = 0;
-    for anki_card in anki_cards {
-        num_cards_added += add_anki_card(&connection, anki_card)?;
-    }
-    println!("Added {} cards.", num_cards_added);
+    update_and_add_anki_notes_from_pundit_contents(&connection, notes, &collection, &anki_notes)?;
     close_connection(connection)?;
     Ok(())
 }
 
-pub fn close_connection(connection: Connection) -> rusqlite::Result<()> {
+pub fn update_and_add_anki_notes_from_pundit_contents(
+    connection: &Connection,
+    notes: &[Note],
+    collection: &AnkiCollection,
+    anki_notes: &[AnkiNote],
+) -> Result<()> {
+    let anki_notes_and_cards = get_anki_notes_and_cards_for_pundit_notes(collection, notes)?;
+    let mut num_notes_added = 0;
+    let mut num_cards_added = 0;
+    let mut num_notes_ignored = 0;
+    for (anki_note, anki_cards) in anki_notes_and_cards.iter() {
+        if (!anki_note_is_in_collection(anki_notes, anki_note)) {
+            num_notes_added += add_anki_note(&connection, anki_note)
+                .context(format!("While adding anki note {}", anki_note.id))?;
+            for anki_card in anki_cards {
+                num_cards_added +=
+                    add_anki_card(&connection, anki_card).context("While adding anki card")?;
+            }
+        } else {
+            num_notes_ignored += 1;
+        }
+    }
+    println!(
+        "Ignored {} notes which are already in the database.",
+        num_notes_ignored
+    );
+    println!("Added {} notes.", num_notes_added);
+    println!("Added {} cards.", num_cards_added);
+    Ok(())
+}
+
+fn anki_note_is_in_collection(anki_notes: &[AnkiNote], note: &AnkiNote) -> bool {
+    anki_notes.iter().any(|n| n.id == note.id)
+}
+
+pub fn get_anki_notes_and_cards_for_pundit_notes(
+    collection: &AnkiCollection,
+    notes: &[Note],
+) -> Result<Vec<(AnkiNote, Vec<AnkiCard>)>> {
+    let mut results = vec![];
+    for pundit_note in notes.iter() {
+        results.extend(get_anki_notes_and_cards_for_pundit_note(
+            collection,
+            pundit_note,
+        )?)
+    }
+    Ok(results)
+    // let res: Vec<Vec<(AnkiNote, Vec<AnkiCard>)>> = notes
+    //     .iter()
+    //     .map(|pundit_note| get_anki_notes_and_cards_for_pundit_note(collection, pundit_note))
+    //     .flatten()
+    //     .collect();
+}
+
+fn get_anki_notes_and_cards_for_pundit_note(
+    collection: &AnkiCollection,
+    pundit_note: &Note,
+) -> Result<Vec<(AnkiNote, Vec<AnkiCard>)>> {
+    get_anki_info_for_pundit_note(pundit_note)
+        .context(format!(
+            "While reading anki entries from note {}",
+            pundit_note.title
+        ))?
+        .iter()
+        .map(|anki_note_info| get_new_anki_note_and_cards(collection, anki_note_info))
+        .collect()
+}
+
+fn get_anki_info_for_pundit_note(pundit_note: &Note) -> Result<Vec<AnkiNoteInfo>> {
+    let re = Regex::new(r"#anki (\d+) ([a-zA-Z]+) ([a-zA-Z]+)").unwrap();
+    let lines = pundit_note
+        .get_lines()
+        .context("While reading file contents")?;
+    let mut currently_at_anki_entry = false;
+    let mut note_info: Option<AnkiNoteInfo> = None;
+    let mut res = vec![];
+    for line in lines {
+        if currently_at_anki_entry {
+            match scan_for_anki_fields(&line?) {
+                None => {
+                    currently_at_anki_entry = false;
+                    res.push(note_info.unwrap());
+                    note_info = None;
+                }
+                Some((key, value)) => {
+                    note_info.as_mut().unwrap().fields.insert(key, value);
+                }
+            }
+        } else {
+            let x = line?;
+            match re.captures(&x) {
+                None => {}
+                Some(capture) => {
+                    note_info = Some(AnkiNoteInfo {
+                        fields: HashMap::new(),
+                        id: i64::from_str(&capture[1])
+                            .context("While reading note id as integer")?,
+                        model_name: capture[2].to_string(),
+                        deck_name: capture[3].to_string(),
+                    });
+                    currently_at_anki_entry = true;
+                }
+            }
+        }
+    }
+    if let Some(info) = note_info {
+        // In case that the last anki entry ended with the last line
+        res.push(info);
+    }
+    Ok(res)
+}
+
+fn scan_for_anki_fields(line: &str) -> Option<(String, String)> {
+    let re = Regex::new(r"#([a-zA-Z]+) (.*)").unwrap();
+    re.captures(line)
+        .map(|cap| (cap[1].to_string(), cap[2].to_string()))
+}
+
+fn close_connection(connection: Connection) -> rusqlite::Result<()> {
     match connection.close() {
         Err((conn, _err)) => close_connection(conn),
         Ok(()) => Ok(()),
     }
 }
 
-pub fn get_csum(input: &str) -> i64 {
+fn get_csum(input: &str) -> i64 {
     let mut hasher = Sha1::new();
     hasher.input_str(input);
     i64::from_str_radix(&hasher.result_str()[..8], 16).expect("Invalid hash result")
 }
 
-fn add_note_id_as_field(fields: &mut Vec<String>, note_id: i64) {
-    fields.insert(0, note_id.to_string());
-}
-
 pub fn get_new_anki_note_and_cards(
     collection: &AnkiCollection,
-    fields: Vec<String>,
-    model_name: String,
-    deck_name: String,
+    note_info: &AnkiNoteInfo,
 ) -> Result<(AnkiNote, Vec<AnkiCard>)> {
-    let model = get_model_by_name(collection, model_name)?;
-    let deck = get_deck_by_name(collection, deck_name)?;
-    let anki_note = get_new_anki_note(fields, model);
+    let model = get_model_by_name(collection, &note_info.model_name)?;
+    let deck = get_deck_by_name(collection, &note_info.deck_name)?;
+    let anki_note = get_new_anki_note(note_info, model)?;
     let anki_cards = get_new_anki_cards(model, deck, &anki_note);
     Ok((anki_note, anki_cards))
 }
 
-fn get_deck_by_name(collection: &AnkiCollection, deck_name: String) -> Result<&AnkiDeck> {
+fn get_deck_by_name<'a>(
+    collection: &'a AnkiCollection,
+    deck_name: &'a str,
+) -> Result<&'a AnkiDeck> {
     collection
         .decks
         .iter()
         .find(|deck| deck.name == deck_name)
-        .ok_or(anyhow!("Invalid name for deck: {}", deck_name))
+        .ok_or_else(|| anyhow!("Invalid name for deck: {}", deck_name))
 }
 
-fn get_model_by_name(collection: &AnkiCollection, model_name: String) -> Result<&AnkiModel> {
+fn get_model_by_name<'a>(
+    collection: &'a AnkiCollection,
+    model_name: &'a str,
+) -> Result<&'a AnkiModel> {
     collection
         .models
         .iter()
         .find(|model| model.name == model_name)
-        .ok_or(anyhow!("Invalid name for model: {}", model_name))
+        .ok_or_else(|| anyhow!("Invalid name for model: {}", model_name))
 }
 
 fn get_new_anki_cards(model: &AnkiModel, deck: &AnkiDeck, anki_note: &AnkiNote) -> Vec<AnkiCard> {
-    let unix_time = get_unix_time();
     model
         .tmpls
         .iter()
         .enumerate()
         .map(|(i, template)| AnkiCard {
-            id: unix_time + (i as i64), // Make sure this is unique
+            id: anki_note.id * 200 + (i as i64), // Make sure this is unique. Some decks have subsequent ids for their notes in which case we cannot simply add 1/2/3 to the note id to get the card id because we might get overlap. Multiplying by 200 ensures that there is enough space for 200 different cards without overlap.
             nid: anki_note.id,
             did: deck.id,
             ord: template.ord,
@@ -121,39 +235,99 @@ pub fn get_unix_time() -> i64 {
         .expect("Basically the year 2000 bug with unix time running over long. What year is it?")
 }
 
-fn verify_fields(fields: &mut Vec<String>, model: &AnkiModel) {
-    // add_note_id_as_field(&mut fields, unix_time);
+fn is_note_id_field(field_name: &str) -> bool {
+    field_name.to_lowercase() == "note id"
 }
 
-pub fn get_new_anki_note(mut fields: Vec<String>, model: &AnkiModel) -> AnkiNote {
+fn verify_fields(fields: &HashMap<String, String>, model: &AnkiModel) -> Result<bool> {
+    let has_note_id_field = model.flds.iter().any(|field| is_note_id_field(&field.name));
+    if has_note_id_field && !is_note_id_field(&model.flds[0].name) {
+        return Err(anyhow!("Note ID field is not the first field."));
+    }
+    if fields.len() == model.flds.len() {
+        match has_note_id_field {
+            true => Err(anyhow!("Number of fields equal to number of fields in model but a note_id field is present.")),
+            false => Ok(false)
+        }
+    } else if fields.len() == model.flds.len() - 1 {
+        match has_note_id_field {
+            true => {
+                Ok(true)
+            },
+            false => Err(anyhow!("Number of fields 1 smaller than number of fields in model but a note_id field is not present."))
+        }
+    } else {
+        Err(anyhow!(
+            "Mismatch in number of fields given to number of fields in model: {} vs {}",
+            fields.len(),
+            model.flds.len()
+        ))
+    }
+}
+
+pub fn sort_fields_by_occurence(
+    note_info: &AnkiNoteInfo,
+    model: &AnkiModel,
+) -> Result<Vec<String>> {
+    model
+        .flds
+        .iter()
+        .map(|fld| {
+            if is_note_id_field(&fld.name) {
+                Ok(note_info.id.to_string())
+            } else {
+                note_info
+                    .fields
+                    .get(&fld.name)
+                    .ok_or_else(|| anyhow!("Entry for field not found: {}", fld.name))
+                    .map(|x| x.to_string())
+            }
+        })
+        .collect()
+}
+
+pub fn get_new_anki_note(note_info: &AnkiNoteInfo, model: &AnkiModel) -> Result<AnkiNote> {
     let unix_time = get_unix_time();
-    verify_fields(&mut fields, model);
-    let guid = unix_time; // I need a unique id here but I dont know how to do much better than just using the id
-    let joined_fields = fields.join("");
-    let csum = get_csum(&fields[0].clone());
-    AnkiNote {
-        id: unix_time,
+    let guid = note_info.id;
+    verify_fields(&note_info.fields, model)?;
+    let sorted_field_entries = sort_fields_by_occurence(note_info, model).context(format!(
+        "Looking up field entries for note {}",
+        note_info.id
+    ))?;
+    let separator = "";
+    let joined_fields = sorted_field_entries.join(separator);
+    let csum = get_csum(&sorted_field_entries[0].clone());
+    let sort_field_name: String = model
+        .flds
+        .get(model.sortf as usize)
+        .ok_or_else(|| anyhow!("Sort field entry in anki model is invalid for this model?"))?
+        .name
+        .to_string();
+    Ok(AnkiNote {
+        id: note_info.id,
         guid: guid.to_string(),
         mid: model.id,
         mod_: unix_time,
         usn: -1, // Force pushing to server
         tags: "".to_string(),
         flds: joined_fields,
-        sfld: fields[0].clone(),
+        sfld: note_info.fields[&sort_field_name].clone(),
         csum,
         flags: 0,
         data: "".to_string(),
-    }
+    })
 }
 
-pub fn add_anki_note(connection: &Connection, anki_note: AnkiNote) -> rusqlite::Result<usize> {
+pub fn add_anki_note(connection: &Connection, anki_note: &AnkiNote) -> rusqlite::Result<usize> {
+    println!("Adding {}", anki_note.id);
     connection.execute(
         "INSERT INTO notes (id, guid, mid, mod, usn, tags, flds, sfld, csum, flags, data) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
         params![anki_note.id, anki_note.guid, anki_note.mid, anki_note.mod_, anki_note.usn, anki_note.tags, anki_note.flds, anki_note.sfld, anki_note.csum, anki_note.flags, anki_note.data]
     )
 }
 
-pub fn add_anki_card(connection: &Connection, anki_card: AnkiCard) -> rusqlite::Result<usize> {
+pub fn add_anki_card(connection: &Connection, anki_card: &AnkiCard) -> rusqlite::Result<usize> {
+    println!("Adding card {}", anki_card.id);
     connection.execute(
         "INSERT INTO cards (id, nid, did, ord, mod, usn, type, queue, due, ivl, factor, reps, lapses, left, odue, odid, flags, data) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
         params![anki_card.id, anki_card.nid, anki_card.did, anki_card.ord, anki_card.mod_, anki_card.usn, anki_card.type_, anki_card.queue, anki_card.due, anki_card.ivl, anki_card.factor, anki_card.reps, anki_card.lapses, anki_card.left, anki_card.odue, anki_card.odid, anki_card.flags, anki_card.data]

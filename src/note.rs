@@ -3,6 +3,8 @@ use regex::Regex;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
+use std::io::BufReader;
+use std::io::Lines;
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Context, Result};
@@ -44,6 +46,11 @@ impl Note {
         let contents = get_title_string(&self.title);
         file.write_all(contents.as_bytes())?;
         Ok(())
+    }
+
+    pub fn get_lines(&self) -> Result<Lines<BufReader<File>>> {
+        let file = File::open(&self.filename)?;
+        Ok(BufReader::new(file).lines())
     }
 }
 

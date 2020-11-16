@@ -3,13 +3,13 @@ use serde_json::{Result, Value};
 
 #[derive(Debug, Deserialize)]
 pub struct AnkiField {
-    font: String,       // display font
-    media: Vec<String>, // array of media. appears to be unused,
-    name: String,       // field name,
-    ord: i64,           // ordinal of the field - goes from 0 to num fields -1,
-    rtl: bool,          // boolean, right-to-left script,
-    size: i64,          // font size,
-    sticky: bool,       // sticky fields retain the value that was last added when adding new notes
+    pub font: String,       // display font
+    pub media: Vec<String>, // array of media. appears to be unused,
+    pub name: String,       // field name,
+    pub ord: i64,           // ordinal of the field - goes from 0 to num fields -1,
+    pub rtl: bool,          // boolean, right-to-left script,
+    pub size: i64,          // font size,
+    pub sticky: bool, // sticky fields retain the value that was last added when adding new notes
 }
 
 // Array of arrays describing, for each template T, which fields are required to generate T.
