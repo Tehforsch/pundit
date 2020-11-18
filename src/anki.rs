@@ -45,7 +45,7 @@ pub fn update_and_add_anki_notes_from_pundit_contents(
     let mut num_cards_added = 0;
     let mut num_notes_ignored = 0;
     for (anki_note, anki_cards) in anki_notes_and_cards.iter() {
-        if (!anki_note_is_in_collection(anki_notes, anki_note)) {
+        if !anki_note_is_in_collection(anki_notes, anki_note) {
             num_notes_added += add_anki_note(&connection, anki_note)
                 .context(format!("While adding anki note {}", anki_note.id))?;
             for anki_card in anki_cards {

@@ -28,7 +28,7 @@ impl Note {
             filename: filename.to_path_buf(),
             title: get_title(&contents)
                 .context(format!("Opening {}", filename.to_str().unwrap()))?,
-            links: get_links(&contents),
+            links: get_links(&contents)?,
         })
     }
 
@@ -72,8 +72,8 @@ fn get_filename_from_title(title: &str) -> String {
     title.replace(" ", "_") + ".org"
 }
 
-fn get_links(contents: &str) -> Vec<Note> {
-    let re = Regex::new(r"\[\[file:(.*)\]\[(.*?)\]\]").unwrap();
+fn get_links(contents: &str) -> Result<Vec<Note>> {
+    let re = Regex::new(r"\[\[file:(.*?)\]\[(.*?)\]\]").unwrap();
     let mut links = vec![];
     for cap in re.captures_iter(contents) {
         links.push(Note {
@@ -82,7 +82,7 @@ fn get_links(contents: &str) -> Vec<Note> {
             links: vec![],
         });
     }
-    links
+    Ok(links)
 }
 
 fn get_title_string(title: &str) -> String {

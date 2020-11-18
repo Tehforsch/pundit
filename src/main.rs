@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -15,6 +15,7 @@ pub mod config;
 pub mod note;
 
 use crate::args::{Opts, SubCommand};
+use crate::config::NOTE_EXTENSION;
 use crate::note::Note;
 use clap::Clap;
 
@@ -42,7 +43,11 @@ fn read_notes(note_folder: &Path) -> Result<Vec<Note>> {
         let entry = entry?;
         let path = entry.path();
         if path.is_file() {
-            notes.push(Note::from_filename(&path)?);
+            if let Some(extension) = path.extension() {
+                if extension == NOTE_EXTENSION {
+                    notes.push(Note::from_filename(&path)?);
+                }
+            }
         }
     }
     Ok(notes)
@@ -78,21 +83,38 @@ fn list_backlinks(notes: &[Note], note: &Note) {
 }
 
 fn get_backlinks<'a>(notes: &'a [Note], note: &'a Note) -> impl Iterator<Item = &'a Note> {
-    let selected_filename = note.filename.to_str().unwrap();
+    let selected_filename = note.filename.file_name().unwrap();
     notes.iter().filter(move |n| {
         n.links
             .iter()
-            .any(|link| link.filename.to_str().unwrap() == selected_filename)
+            // TODO: This does not work for multi-dir setups!
+            .any(|link| link.filename.file_name().unwrap() == selected_filename)
     })
 }
 
-fn find_note_interactively(notes: &[Note], filter_str: Option<&str>) -> Note {
-    let notes_filtered = get_notes(notes, filter_str);
-    let notes_filtered_vec: Vec<&Note> = notes_filtered.collect();
-    select_note_with_fzf(&notes_filtered_vec)
+fn find_backlinked_note_interactively(notes: &[Note], note: &Note) {
+    let backlinks = get_backlinks(notes, note);
+    let backlinks_coll: Vec<&Note> = backlinks.collect();
+    // backlinks_coll = ();
+    select_note_interactively(&backlinks_coll);
 }
 
-fn select_note_with_fzf<'a>(notes: &'a [&Note]) -> Note {
+fn find_note_interactively(notes: &[Note], filter_str: Option<&str>) {
+    let notes_filtered = get_notes(notes, filter_str);
+    let notes_filtered_coll: Vec<&Note> = notes_filtered.collect();
+    select_note_interactively(&notes_filtered_coll);
+}
+
+fn select_note_interactively(notes: &[&Note]) {
+    let note = select_note_with_fzf(notes);
+    // For interactive use from other processes: Print the filename of the resulting file.
+    match note {
+        Some(n) => println!("{}", n.filename.canonicalize().unwrap().to_str().unwrap()),
+        None => println!(),
+    };
+}
+
+fn select_note_with_fzf(notes: &[&Note]) -> Option<Note> {
     let strs: Vec<String> = notes
         .iter()
         .enumerate()
@@ -104,17 +126,16 @@ fn select_note_with_fzf<'a>(notes: &'a [&Note]) -> Note {
     let query = split[0];
     let note_info = split[1];
     let note_info_split: Vec<&str> = note_info.split(';').collect();
-    dbg!(&note_info_split);
     if note_info_split.len() == 3 {
         let index = note_info_split[0].parse::<usize>().unwrap();
         let note = notes[index];
         assert_eq!(note.filename.to_str().unwrap(), note_info_split[2]);
-        (*note).clone()
+        Some((*note).clone())
     } else {
         let new_note_title = query.replace("\n", "");
         let note = Note::from_title(&new_note_title);
         note.write_without_contents().expect("Failed to write note");
-        note
+        Some(note)
     }
 }
 
@@ -122,9 +143,11 @@ fn run_fzf_on_string(content: &str) -> String {
     let mut child = Command::new("fzf")
         .args(&[
             "--print-query",
+            "--margin=1,0",
             "--with-nth=2",
             "--delimiter=;",
-            "--preview=cat '{3}'",
+            // "--preview=cat '{3}'",
+            "--preview=",
         ])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -207,9 +230,11 @@ fn get_args() -> Opts {
 }
 
 fn transform_passed_path(entry_folder: &Path, note_folder: &Path, path: &Path) -> Result<PathBuf> {
-    let absolute_path = entry_folder.join(path).canonicalize();
+    let absolute_path = entry_folder.join(path).canonicalize().context(anyhow!(
+        "Finding file passed as argument: {}",
+        path.to_str().unwrap()
+    ))?;
     Ok(absolute_path
-        .unwrap()
         .strip_prefix(note_folder.canonicalize().unwrap())
         .map_err(|_| anyhow!("Note not in folder: {}", path.to_str().unwrap()))?
         .to_path_buf())
@@ -220,13 +245,21 @@ fn run(entry_folder: &Path, note_folder: &Path, args: Opts, notes: Vec<Note>) ->
         SubCommand::List(l) => {
             list_notes(&notes, l.filter.as_deref());
         }
-        SubCommand::Backlinks(l) => {
+        SubCommand::ListBacklinks(l) => {
             let note = Note::from_filename(&transform_passed_path(
                 entry_folder,
                 note_folder,
                 &l.filename,
             )?);
             list_backlinks(&notes, &note?);
+        }
+        SubCommand::Backlinks(l) => {
+            let note = Note::from_filename(&transform_passed_path(
+                entry_folder,
+                note_folder,
+                &l.filename,
+            )?);
+            find_backlinked_note_interactively(&notes, &note?);
         }
         SubCommand::Find(l) => {
             find_note_interactively(&notes, l.filter.as_deref());

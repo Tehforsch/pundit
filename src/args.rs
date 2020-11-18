@@ -17,7 +17,8 @@ pub struct Opts {
 #[derive(Clap, Debug)]
 pub enum SubCommand {
     List(ListNotes),
-    Backlinks(ListBacklinks),
+    ListBacklinks(ListBacklinks),
+    Backlinks(FindBacklinks),
     Find(FindNoteInteractively),
     Verify(VerifyNotes),
     Delete(DeleteNote),
@@ -36,6 +37,14 @@ pub struct ListNotes {
 /// List all notes that contain a link to the note
 #[derive(Clap, Debug)]
 pub struct ListBacklinks {
+    /// The filename for which to show the backlinks
+    pub filename: PathBuf,
+}
+
+#[derive(Clap, Debug)]
+#[cfg(feature = "anki")]
+/// Interactively select a note out of all notes that contain a link to the note
+pub struct FindBacklinks {
     /// The filename for which to show the backlinks
     pub filename: PathBuf,
 }
