@@ -133,7 +133,7 @@ fn select_note_with_fzf(notes: &[&Note]) -> Option<Note> {
         Some((*note).clone())
     } else {
         let new_note_title = query.replace("\n", "");
-        let note = Note::from_title(&new_note_title);
+        let note = Note::from_title_and_date(&new_note_title);
         note.write_without_contents().expect("Failed to write note");
         Some(note)
     }

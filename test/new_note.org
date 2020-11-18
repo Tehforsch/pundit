@@ -1,4 +1,0 @@
-#+TITLE: new note
-#anki 1234512345 Spanish Spanish
-    #Front la cabra
-    #Back the goat

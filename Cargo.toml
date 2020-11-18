@@ -19,3 +19,4 @@ rust-crypto = {version = "^0.2", optional=true}
 serde_json = {version = "1.0.59", optional=true}
 serde = {version = "1.0.117", optional=true}
 serde_derive = {version = "1.0.117", optional=true}
+chrono = "0.4.19"

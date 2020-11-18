@@ -5,7 +5,7 @@ use serde_json::{Result, Value};
 pub struct AnkiDeck {
     pub name: String, // name of deck
     #[serde(rename(deserialize = "extendRev"))]
-    pub extend_rev: i64, // extended review card limit (for custom study). Potentially absent, in this case it's considered to be 10 by aqt.customstudy ,
+    pub extend_rev: Option<i64>, // extended review card limit (for custom study). Potentially absent, in this case it's considered to be 10 by aqt.customstudy ,
     pub usn: i64, // usn: Update sequence number: used in same way as other usn vales in db ,
     pub collapsed: bool, // true when deck is collapsed ,
     // pub browserCollapsed: Option<bool>, // true when deck collapsed in browser sometimes not available?
@@ -21,12 +21,12 @@ pub struct AnkiDeck {
     #[serde(rename(deserialize = "dyn"))]
     pub dyn_: i64, // "1 if dynamic (AKA filtered) deck",
     #[serde(rename(deserialize = "extendNew"))]
-    pub extend_new: i64, // extended new card limit (for custom study). Potentially absent, in this case it's considered to be 10 by aqt.customstudy ,
-    pub conf: i64, // id of option group from dconf in `col` table. Or absent if the deck is dynamic. Its absent in filtered deck,
-    pub id: i64,   // deck ID (automatically generated long)
+    pub extend_new: Option<i64>, // extended new card limit (for custom study). Potentially absent, in this case it's considered to be 10 by aqt.customstudy ,
+    pub conf: Option<i64>, // id of option group from dconf in `col` table. Or absent if the deck is dynamic. Its absent in filtered deck,
+    pub id: i64,           // deck ID (automatically generated long)
     #[serde(rename(deserialize = "mod"))]
     pub mod_: i64, // last modification time ,
-    pub desc: String, // deck description
+    pub desc: String,      // deck description
 }
 
 pub fn get_anki_decks_from_json(json_data: String) -> Result<Vec<AnkiDeck>> {

@@ -1,4 +1,4 @@
-use crate::config::COMMENT_STRING;
+use crate::config::{COMMENT_STRING, NOTE_DATE_STR_FORMAT, NOTE_FILENAME_STR_FORMAT};
 use regex::Regex;
 use std::fs;
 use std::fs::File;
@@ -8,6 +8,7 @@ use std::io::Lines;
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Context, Result};
+use chrono::{DateTime, Local};
 
 #[derive(Debug, Clone)]
 struct InvalidNoteError;
@@ -32,8 +33,9 @@ impl Note {
         })
     }
 
-    pub fn from_title(title: &str) -> Note {
-        let filename = Path::new(&get_filename_from_title(&title)).to_path_buf();
+    pub fn from_title_and_date(title: &str) -> Note {
+        let date_time = Local::now();
+        let filename = Path::new(&get_filename_from_title(&title, date_time)).to_path_buf();
         Note {
             filename,
             title: title.to_string(),
@@ -68,8 +70,12 @@ fn get_title(contents: &str) -> Result<String> {
     }
 }
 
-fn get_filename_from_title(title: &str) -> String {
-    title.replace(" ", "_") + ".org"
+fn get_filename_from_title(title: &str, date_time: DateTime<Local>) -> String {
+    let title_string = title.replace(" ", "_");
+    let date_string = format!("{}", date_time.format(NOTE_DATE_STR_FORMAT));
+    NOTE_FILENAME_STR_FORMAT
+        .replace("{titleString}", &title_string)
+        .replace("{dateString}", &date_string)
 }
 
 fn get_links(contents: &str) -> Result<Vec<Note>> {
