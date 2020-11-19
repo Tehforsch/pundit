@@ -1,3 +1,0 @@
-#+TITLE: note5
-[[file:20200424162453-linkNote2.org][linkNote2]]
-[[file:20200424162405-note5.org][note5]]

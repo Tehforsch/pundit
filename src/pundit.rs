@@ -4,15 +4,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::str;
 
-pub mod anki;
-pub mod anki_card;
-pub mod anki_collection;
-pub mod anki_deck;
-pub mod anki_model;
-pub mod anki_note;
 pub mod args;
 pub mod config;
 pub mod note;
+pub mod pankit;
+pub mod pundit_pankit;
 
 use crate::args::{Opts, SubCommand};
 use crate::config::NOTE_EXTENSION;
@@ -283,8 +279,8 @@ fn run(entry_folder: &Path, note_folder: &Path, args: Opts, notes: Vec<Note>) ->
             )?);
             delete_note(&notes, &note?);
         }
-        #[cfg(feature = "anki")]
-        SubCommand::Anki(l) => crate::anki::update_anki(&l.database, &notes)?,
+        #[cfg(feature = "pankit")]
+        SubCommand::Pankit(l) => crate::pundit_pankit::update_anki(&l.database, &notes)?,
     }
     Ok(())
 }

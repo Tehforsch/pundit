@@ -23,8 +23,8 @@ pub enum SubCommand {
     Verify(VerifyNotes),
     Delete(DeleteNote),
     Rename(RenameNote),
-    #[cfg(feature = "anki")]
-    Anki(Anki),
+    #[cfg(feature = "pankit")]
+    Pankit(Pankit),
 }
 
 /// List notes.
@@ -42,7 +42,6 @@ pub struct ListBacklinks {
 }
 
 #[derive(Clap, Debug)]
-#[cfg(feature = "anki")]
 /// Interactively select a note out of all notes that contain a link to the note
 pub struct FindBacklinks {
     /// The filename for which to show the backlinks
@@ -77,7 +76,7 @@ pub struct RenameNote {
 
 /// Update the anki contents from the notes.
 #[derive(Clap, Debug)]
-#[cfg(feature = "anki")]
-pub struct Anki {
+#[cfg(feature = "pankit")]
+pub struct Pankit {
     pub database: PathBuf,
 }

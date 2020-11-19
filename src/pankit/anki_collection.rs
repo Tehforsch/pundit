@@ -1,5 +1,6 @@
-use crate::anki_deck::AnkiDeck;
-use crate::anki_model::AnkiModel;
+use crate::pankit::anki_deck::AnkiDeck;
+use crate::pankit::anki_model::AnkiModel;
+
 #[derive(Debug)]
 pub struct AnkiCollection {
     pub id: i64,      // integer primary key arbitrary number since there is only one row
