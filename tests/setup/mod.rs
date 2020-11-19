@@ -7,7 +7,6 @@ use tempdir::TempDir;
 
 use anyhow::{Context, Result};
 
-pub static TEST_SETUPS_PATH: &str = "testSetups";
 pub static TEST_STAGE_PATH: &str = "punditTestStage";
 
 pub struct TestEnv {
@@ -15,7 +14,7 @@ pub struct TestEnv {
     executable: PathBuf,
 }
 
-pub fn setup_test(test_name: &str) -> TestEnv {
+pub fn setup_test(setups_folder: &Path, test_name: &str) -> TestEnv {
     let executable_name = if cfg!(windows) {
         "pundit.exe"
     } else {
@@ -32,7 +31,7 @@ pub fn setup_test(test_name: &str) -> TestEnv {
         executable: executable.to_path_buf(),
         dir: TempDir::new(TEST_STAGE_PATH).expect("Setup test directory"),
     };
-    let source = Path::new(TEST_SETUPS_PATH).join(test_name);
+    let source = setups_folder.join(test_name);
     copy(source, &env.dir).expect("Copying test files");
     env
 }
@@ -58,15 +57,19 @@ fn get_shell_command_output(command: &str, args: &[&str]) -> String {
         .to_owned()
 }
 
-pub fn run_pundit(env: TestEnv, args: &[&str]) -> String {
+pub fn run_pundit(env: &TestEnv, args: &[&str]) -> String {
     let mut new_args = vec![env.dir.path().to_str().unwrap()];
     new_args.extend_from_slice(args);
     get_shell_command_output(env.executable.to_str().unwrap(), &new_args)
 }
 
-pub fn run_pundit_on_setup(setup_name: &str, args: &[&str]) -> (TestEnv, String) {
-    let env = setup_test(setup_name);
-    let output = run_pundit(env, args);
+pub fn run_setup_with_args(
+    setups_folder: &Path,
+    setup_name: &str,
+    args: &[&str],
+) -> (TestEnv, String) {
+    let env = setup_test(setups_folder, setup_name);
+    let output = run_pundit(&env, args);
     (env, output)
 }
 
