@@ -1,5 +1,5 @@
-use crate::pankit::anki_deck::AnkiDeck;
-use crate::pankit::anki_model::AnkiModel;
+use crate::anki::anki_deck::AnkiDeck;
+use crate::anki::anki_model::AnkiModel;
 
 #[derive(Debug)]
 pub struct AnkiCollection {

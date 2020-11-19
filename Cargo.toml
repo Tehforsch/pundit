@@ -10,10 +10,6 @@ edition = "2018"
 name = "pundit"
 path = "src/pundit.rs"
 
-# [[bin]]
-# name = "pankit"
-# path = "src/pankit/main.rs"
-
 [features]
 default = ["pankit"]
 pankit = ["rusqlite", "rust-crypto", "serde_json", "serde", "serde_derive"]
