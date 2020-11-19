@@ -10,9 +10,9 @@ edition = "2018"
 name = "pundit"
 path = "src/pundit.rs"
 
-[[bin]]
-name = "pankit"
-path = "src/pankit/main.rs"
+# [[bin]]
+# name = "pankit"
+# path = "src/pankit/main.rs"
 
 [features]
 default = ["pankit"]
