@@ -9,9 +9,16 @@ use anyhow::{Context, Result};
 
 pub static TEST_STAGE_PATH: &str = "punditTestStage";
 
+#[derive(Debug)]
 pub struct TestEnv {
     pub dir: TempDir,
     pub executable: PathBuf,
+}
+
+pub struct TestOutput {
+    pub env: TestEnv,
+    pub success: bool,
+    pub output: String,
 }
 
 pub fn setup_test(setups_folder: &Path, test_name: &str) -> TestEnv {
@@ -36,41 +43,39 @@ pub fn setup_test(setups_folder: &Path, test_name: &str) -> TestEnv {
     env
 }
 
-pub fn get_shell_command_output(command: &str, args: &[&str]) -> String {
+pub fn get_shell_command_output(command: &str, args: &[&str]) -> (bool, String) {
     let child = Command::new(command)
         .args(args)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()
         .expect(&format!("Failed to run command: {}", command));
 
-    // {
-    //     let stdin = child.stdin.as_mut().expect("Failed to open stdin");
-    //     stdin
-    //         .write_all(content.as_bytes())
-    //         .expect("Failed to write to stdin");
-    // }
-
     let output = child.wait_with_output().expect("Failed to read stdout");
-    str::from_utf8(&output.stdout)
-        .expect("Failed to decode fzf output as utf8")
-        .to_owned()
+    let exit_code = output.status;
+    (
+        exit_code.success(),
+        str::from_utf8(&output.stdout)
+            .expect("Failed to decode fzf output as utf8")
+            .to_owned(),
+    )
 }
 
-pub fn run_pundit(env: &TestEnv, args: &[&str]) -> String {
+pub fn run_pundit(env: &TestEnv, args: &[&str]) -> (bool, String) {
     let mut new_args = vec![env.dir.path().to_str().unwrap()];
     new_args.extend_from_slice(args);
     get_shell_command_output(env.executable.to_str().unwrap(), &new_args)
 }
 
-pub fn run_setup_with_args(
-    setups_folder: &Path,
-    setup_name: &str,
-    args: &[&str],
-) -> (TestEnv, String) {
+pub fn run_setup_with_args(setups_folder: &Path, setup_name: &str, args: &[&str]) -> TestOutput {
     let env = setup_test(setups_folder, setup_name);
     let output = run_pundit(&env, args);
-    (env, output)
+    TestOutput {
+        env: env,
+        output: output.1,
+        success: output.0,
+    }
 }
 
 // Taken from 'Doug' from

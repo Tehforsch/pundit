@@ -12,7 +12,7 @@ path = "src/pundit.rs"
 
 [features]
 default = ["pankit"]
-pankit = ["rusqlite", "rust-crypto", "serde_json", "serde", "serde_derive"]
+pankit = ["rusqlite", "rust-crypto", "serde_json", "serde", "serde_derive", "serde_yaml"]
 
 [dependencies]
 regex = "1"
@@ -21,8 +21,9 @@ anyhow = "1.0.13"
 rusqlite = {version = "0.24.1", optional=true}
 rust-crypto = {version = "^0.2", optional=true}
 serde_json = {version = "1.0.59", optional=true}
-serde = {version = "1.0.117", optional=true}
+serde = {version = "1.0.117", optional=true, features=["derive"]}
 serde_derive = {version = "1.0.117", optional=true}
+serde_yaml = {version = "0.8", optional=true}
 chrono = "0.4.19"
 
 [dev-dependencies]

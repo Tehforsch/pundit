@@ -27,8 +27,11 @@ pub struct AnkiNoteInfo {
     pub deck_name: String,
 }
 
-pub fn anki_note_is_in_collection(anki_notes: &[AnkiNote], note: &AnkiNote) -> bool {
-    anki_notes.iter().any(|n| n.id == note.id)
+pub fn find_anki_note_in_collection<'a>(
+    anki_notes: &'a [AnkiNote],
+    note: &'a AnkiNote,
+) -> Option<&'a AnkiNote> {
+    anki_notes.iter().find(|n| n.id == note.id)
 }
 
 pub fn close_connection(connection: Connection) -> rusqlite::Result<()> {
@@ -38,7 +41,7 @@ pub fn close_connection(connection: Connection) -> rusqlite::Result<()> {
     }
 }
 
-fn get_csum(input: &str) -> i64 {
+pub fn get_csum(input: &str) -> i64 {
     let mut hasher = Sha1::new();
     hasher.input_str(input);
     i64::from_str_radix(&hasher.result_str()[..8], 16).expect("Invalid hash result")
@@ -62,7 +65,7 @@ fn get_deck_by_name<'a>(
     collection
         .decks
         .iter()
-        .find(|deck| &deck.name == deck_name)
+        .find(|deck| deck.name == deck_name)
         .ok_or_else(|| anyhow!("Invalid name for deck: {}", deck_name))
 }
 
@@ -210,6 +213,23 @@ pub fn add_anki_card(connection: &Connection, anki_card: &AnkiCard) -> rusqlite:
     connection.execute(
         "INSERT INTO cards (id, nid, did, ord, mod, usn, type, queue, due, ivl, factor, reps, lapses, left, odue, odid, flags, data) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
         params![anki_card.id, anki_card.nid, anki_card.did, anki_card.ord, anki_card.mod_, anki_card.usn, anki_card.type_, anki_card.queue, anki_card.due, anki_card.ivl, anki_card.factor, anki_card.reps, anki_card.lapses, anki_card.left, anki_card.odue, anki_card.odid, anki_card.flags, anki_card.data]
+    )
+}
+
+pub fn update_anki_note_contents(
+    connection: &Connection,
+    anki_note: &AnkiNote,
+) -> rusqlite::Result<usize> {
+    println!("Updating note contents {}", anki_note.id);
+    connection.execute(
+        "UPDATE notes SET (mod, flds, sfld, csum) = (?1, ?2, ?3, ?4) WHERE id = (?5)",
+        params![
+            anki_note.mod_,
+            anki_note.flds,
+            anki_note.sfld,
+            anki_note.csum,
+            anki_note.id
+        ],
     )
 }
 

@@ -1,5 +1,6 @@
 use clap::Clap;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 /// Manage notes and links between them.
 #[derive(Clap)]
@@ -78,5 +79,40 @@ pub struct RenameNote {
 #[derive(Clap, Debug)]
 #[cfg(feature = "pankit")]
 pub struct Pankit {
+    /// The path of the anki database to update
     pub database: PathBuf,
+    /// The path of the pankit database which is used for synchronization of the pundit notes and anki database
+    pub pankit_db: PathBuf,
+    // #[clap(default_value = "error")]
+    /// How to deal with conflicting contents between anki and pundit that cannot be resolved automatically
+    #[clap(possible_values = &["ignore", "error", "pundit", "anki"], default_value = "error")]
+    pub conflict_handling: ConflictHandling,
+}
+
+#[derive(Clap, Debug)]
+#[cfg(feature = "pankit")]
+pub enum ConflictHandling {
+    /// Show an error if any conflict is encountered. Do not change anything in the database
+    GiveError,
+    /// Print out all conflicts but apply any other changes nonetheless
+    Ignore,
+    /// Blindly use the contents from anki
+    Anki,
+    /// Blindly use the contents from pundit
+    Pundit,
+}
+
+// Implement the trait
+impl FromStr for ConflictHandling {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "error" => Ok(ConflictHandling::GiveError),
+            "ignore" => Ok(ConflictHandling::Ignore),
+            "pundit" => Ok(ConflictHandling::Pundit),
+            "anki" => Ok(ConflictHandling::Anki),
+            _ => Err("no match"),
+        }
+    }
 }
