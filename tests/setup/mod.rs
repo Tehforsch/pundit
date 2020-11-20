@@ -10,8 +10,8 @@ use anyhow::{Context, Result};
 pub static TEST_STAGE_PATH: &str = "punditTestStage";
 
 pub struct TestEnv {
-    dir: TempDir,
-    executable: PathBuf,
+    pub dir: TempDir,
+    pub executable: PathBuf,
 }
 
 pub fn setup_test(setups_folder: &Path, test_name: &str) -> TestEnv {
@@ -36,7 +36,7 @@ pub fn setup_test(setups_folder: &Path, test_name: &str) -> TestEnv {
     env
 }
 
-fn get_shell_command_output(command: &str, args: &[&str]) -> String {
+pub fn get_shell_command_output(command: &str, args: &[&str]) -> String {
     let child = Command::new(command)
         .args(args)
         .stdin(Stdio::piped())

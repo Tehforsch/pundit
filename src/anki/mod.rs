@@ -59,11 +59,10 @@ fn get_deck_by_name<'a>(
     collection: &'a AnkiCollection,
     deck_name: &'a str,
 ) -> Result<&'a AnkiDeck> {
-    dbg!(deck_name);
     collection
         .decks
         .iter()
-        .find(|deck| dbg!(&deck.name) == deck_name)
+        .find(|deck| &deck.name == deck_name)
         .ok_or_else(|| anyhow!("Invalid name for deck: {}", deck_name))
 }
 

@@ -54,6 +54,7 @@ pub fn update_and_add_anki_notes_from_pundit_contents(
     println!("Added {} cards.", num_cards_added);
     Ok(())
 }
+
 pub fn get_anki_notes_and_cards_for_pundit_notes(
     collection: &AnkiCollection,
     notes: &[Note],
