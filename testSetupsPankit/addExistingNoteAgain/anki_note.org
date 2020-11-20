@@ -1,0 +1,4 @@
+#+TITLE: anki note
+#anki 1 Spanish Spanish
+#Spanish la palabra en Español
+#English the word in English
