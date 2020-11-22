@@ -48,6 +48,15 @@ fn test_conflicting_note_contents_no_database_pundit() {
     assert!(out.success); // The program should use the changes from the pundit note and not give an error
 }
 
+#[test]
+fn test_add_note_default_deck_model() {
+    assert!(
+        run_pankit_on_setup("addNoteDefaultDeckModel", &[])
+            .unwrap()
+            .success
+    );
+}
+
 fn run_pankit_on_setup(setup_name: &str, args: &[&str]) -> Result<TestOutput> {
     let mut new_args = vec![
         "pankit",

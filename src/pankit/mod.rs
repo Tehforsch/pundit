@@ -4,8 +4,12 @@ use crate::anki::find_anki_note_in_collection;
 use crate::anki::get_csum;
 use crate::anki::update_anki_note_contents;
 use crate::args::ConflictHandling;
+use crate::config::DEFAULT_DECK_STRING;
+use crate::config::DEFAULT_MODEL_STRING;
 use crate::Note;
 use anyhow::{anyhow, Context, Result};
+use regex::Captures;
+use regex::Match;
 use regex::Regex;
 use rusqlite::Connection;
 use std::collections::HashMap;
@@ -64,11 +68,11 @@ pub fn update_anki(
         conflict_handling,
     )?;
     close_connection(connection)?;
-    write_panki_database(pankit_db_path, &pankit_db)?;
+    write_pankit_database(pankit_db_path, &pankit_db)?;
     Ok(())
 }
 
-fn write_panki_database(pankit_db_path: &Path, pankit_db: &PankitDatabase) -> Result<()> {
+fn write_pankit_database(pankit_db_path: &Path, pankit_db: &PankitDatabase) -> Result<()> {
     let data = serde_yaml::to_string(pankit_db).context("While converting pankit db to yaml")?;
     fs::write(pankit_db_path, data).context("Unable to write session file")?;
     Ok(())
@@ -295,16 +299,19 @@ fn get_anki_notes_and_cards_for_pundit_note(
 }
 
 fn get_anki_info_for_pundit_note(pundit_note: &Note) -> Result<Vec<AnkiNoteInfo>> {
-    let re = Regex::new(r"#anki (\d+) ([a-zA-Z]+) ([a-zA-Z:]+)").unwrap();
-    let lines = pundit_note
-        .get_lines()
+    let content = pundit_note
+        .get_contents()
         .context("While reading file contents")?;
+    let default_model = get_default_model(&content);
+    let default_deck = get_default_deck(&content);
+    let re = get_anki_card_begin_regex();
+    let lines = content.lines();
     let mut currently_at_anki_entry = false;
     let mut note_info: Option<AnkiNoteInfo> = None;
     let mut res = vec![];
     for line in lines {
         if currently_at_anki_entry {
-            match scan_for_anki_fields(&line?) {
+            match scan_for_anki_fields(&line) {
                 None => {
                     currently_at_anki_entry = false;
                     res.push(note_info.unwrap());
@@ -315,17 +322,15 @@ fn get_anki_info_for_pundit_note(pundit_note: &Note) -> Result<Vec<AnkiNoteInfo>
                 }
             }
         } else {
-            let x = line?;
+            let x = line;
             match re.captures(&x) {
                 None => {}
                 Some(capture) => {
-                    note_info = Some(AnkiNoteInfo {
-                        fields: HashMap::new(),
-                        id: i64::from_str(&capture[1])
-                            .context("While reading note id as integer")?,
-                        model_name: capture[2].to_string(),
-                        deck_name: capture[3].to_string(),
-                    });
+                    note_info = Some(get_anki_card_header(
+                        &capture,
+                        default_model.as_deref(),
+                        default_deck.as_deref(),
+                    )?);
                     currently_at_anki_entry = true;
                 }
             }
@@ -337,6 +342,56 @@ fn get_anki_info_for_pundit_note(pundit_note: &Note) -> Result<Vec<AnkiNoteInfo>
     }
     Ok(res)
 }
+
+fn get_anki_card_header(
+    capture: &Captures,
+    default_model: Option<&str>,
+    default_deck: Option<&str>,
+) -> Result<AnkiNoteInfo> {
+    Ok(AnkiNoteInfo {
+        fields: HashMap::new(),
+        id: i64::from_str(&capture[1]).context("While reading note id as integer")?,
+        model_name: get_header_match_or_default(capture.get(2), default_model).ok_or(anyhow!(
+            "No model name provided in card header but no default model given either"
+        ))?,
+        deck_name: get_header_match_or_default(capture.get(3), default_deck).ok_or(anyhow!(
+            "No deck name provided in card header but no default deck given either"
+        ))?,
+    })
+}
+
+fn get_header_match_or_default(
+    header_match: Option<Match>,
+    default: Option<&str>,
+) -> Option<String> {
+    header_match
+        .map(|c| c.as_str())
+        .filter(|c| c != &"")
+        .or(default)
+        .map(|c| c.to_owned())
+}
+
+fn get_anki_card_begin_regex() -> Regex {
+    Regex::new(r"#anki (\d+) *([a-zA-Z]*) *([a-zA-Z:]*)").unwrap()
+}
+
+fn get_note_attribute(contents: &str, attribute_name: &str) -> Option<String> {
+    for line in contents.lines() {
+        if let Some(s) = line.strip_prefix(attribute_name) {
+            return Some(s.to_owned());
+        };
+    }
+    None
+}
+
+fn get_default_model(pundit_note_contents: &str) -> Option<String> {
+    get_note_attribute(pundit_note_contents, DEFAULT_MODEL_STRING)
+}
+
+fn get_default_deck(pundit_note_contents: &str) -> Option<String> {
+    get_note_attribute(pundit_note_contents, DEFAULT_DECK_STRING)
+}
+
 fn scan_for_anki_fields(line: &str) -> Option<(String, String)> {
     let re = Regex::new(r"#([a-zA-Z]+) (.*)").unwrap();
     re.captures(line)

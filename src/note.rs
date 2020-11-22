@@ -1,10 +1,8 @@
-use crate::config::{COMMENT_STRING, NOTE_DATE_STR_FORMAT, NOTE_FILENAME_STR_FORMAT};
+use crate::config::{NOTE_DATE_STR_FORMAT, NOTE_FILENAME_STR_FORMAT, TITLE_STRING};
 use regex::Regex;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
-use std::io::BufReader;
-use std::io::Lines;
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Context, Result};
@@ -50,21 +48,20 @@ impl Note {
         Ok(())
     }
 
-    pub fn get_lines(&self) -> Result<Lines<BufReader<File>>> {
-        let file = File::open(&self.filename)?;
-        Ok(BufReader::new(file).lines())
+    pub fn get_contents(&self) -> Result<String> {
+        fs::read_to_string(&self.filename).context("While reading file")
     }
 }
 
 fn get_title(contents: &str) -> Result<String> {
-    if !contents.starts_with(COMMENT_STRING) {
+    if !contents.starts_with(TITLE_STRING) {
         Err(anyhow!("Note does not contain title"))
     } else {
         let title = contents
             .lines()
             .next()
             .unwrap()
-            .strip_prefix(COMMENT_STRING)
+            .strip_prefix(TITLE_STRING)
             .unwrap();
         Ok(title.to_string())
     }

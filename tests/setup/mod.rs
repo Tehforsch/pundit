@@ -68,6 +68,7 @@ pub fn run_pundit(env: &TestEnv, args: &[&str]) -> (bool, String, String) {
     get_shell_command_output(env.executable.to_str().unwrap(), &new_args)
 }
 
+#[allow(dead_code)] // Not sure why I need this to begin with?
 pub fn run_pundit_on_setup_with_args(
     binary_name: String,
     setups_folder: &Path,
@@ -137,6 +138,7 @@ pub fn copy<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> Result<()> {
     Ok(())
 }
 
+#[allow(dead_code)] // Not sure why I need this to begin with?
 pub fn get_pundit_executable() -> String {
     if cfg!(windows) {
         "pundit.exe".to_owned()
@@ -145,6 +147,7 @@ pub fn get_pundit_executable() -> String {
     }
 }
 
+#[allow(dead_code)] // Not sure why I need this to begin with?
 pub fn get_ankitool_executable() -> String {
     if cfg!(windows) {
         "ankitool.exe".to_owned()

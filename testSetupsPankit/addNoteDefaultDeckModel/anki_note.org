@@ -1,0 +1,6 @@
+#+TITLE: anki note
+#+ANKI_DECK: Spanish
+#+ANKI_MODEL: Spanish
+#anki 1
+#Spanish la palabra en Español
+#English the word in English
