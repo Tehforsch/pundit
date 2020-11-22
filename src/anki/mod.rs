@@ -59,7 +59,7 @@ pub fn get_new_anki_note_and_cards(
     Ok((anki_note, anki_cards))
 }
 
-fn get_deck_by_name<'a>(
+pub fn get_deck_by_name<'a>(
     collection: &'a AnkiCollection,
     deck_name: &'a str,
 ) -> Result<&'a AnkiDeck> {
@@ -70,7 +70,7 @@ fn get_deck_by_name<'a>(
         .ok_or_else(|| anyhow!("Invalid name for deck: {}", deck_name))
 }
 
-fn get_model_by_name<'a>(
+pub fn get_model_by_name<'a>(
     collection: &'a AnkiCollection,
     model_name: &'a str,
 ) -> Result<&'a AnkiModel> {

@@ -18,6 +18,7 @@ pub struct AnkiOpts {
 pub enum AnkiSubCommand {
     ListModels(ListModels),
     ListDecks(ListDecks),
+    ListFields(ListFields),
 }
 
 /// List all the models (note types) in the anki database
@@ -27,3 +28,9 @@ pub struct ListModels {}
 /// List all the models (note types) in the anki database
 #[derive(Clap, Debug)]
 pub struct ListDecks {}
+
+/// List all the fields for a given model (note type)
+#[derive(Clap, Debug)]
+pub struct ListFields {
+    pub model: String,
+}

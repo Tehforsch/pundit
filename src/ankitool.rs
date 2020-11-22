@@ -2,7 +2,7 @@ pub mod anki;
 
 use crate::anki::anki_args::{AnkiOpts, AnkiSubCommand};
 use crate::anki::anki_collection::AnkiCollection;
-use crate::anki::{close_connection, read_collection};
+use crate::anki::{close_connection, get_model_by_name, read_collection};
 use anyhow::Result;
 use clap::Clap;
 use rusqlite::Connection;
@@ -18,6 +18,14 @@ pub fn list_models(collection: &AnkiCollection) -> Result<()> {
 pub fn list_decks(collection: &AnkiCollection) -> Result<()> {
     for deck in collection.decks.iter() {
         println!("{}", &deck.name)
+    }
+    Ok(())
+}
+
+pub fn list_fields(collection: &AnkiCollection, model_name: &str) -> Result<()> {
+    let model = get_model_by_name(collection, model_name)?;
+    for field in model.flds.iter() {
+        println!("{}", field.name);
     }
     Ok(())
 }
@@ -39,6 +47,7 @@ fn run(_connection: &Connection, collection: &AnkiCollection, args: AnkiOpts) ->
     match args.subcmd {
         AnkiSubCommand::ListModels(_) => list_models(&collection)?,
         AnkiSubCommand::ListDecks(_) => list_decks(&collection)?,
+        AnkiSubCommand::ListFields(l) => list_fields(&collection, &l.model)?,
     }
     Ok(())
 }

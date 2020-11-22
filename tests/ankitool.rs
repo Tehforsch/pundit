@@ -37,6 +37,16 @@ fn test_list_decks() {
     assert!(out.output.contains("Default"));
 }
 
+#[test]
+fn test_list_fields() {
+    let out = run_ankitool_on_setup("listFields", &["list-fields", "SomeModel"]).unwrap();
+    assert!(out.output.contains("Front"));
+    assert!(out.output.contains("Back"));
+    assert!(out.output.contains("SomeField1"));
+    assert!(out.output.contains("SomeField2"));
+    assert!(out.output.contains("SomeField3"));
+}
+
 fn run_ankitool_on_setup(setup_name: &str, args: &[&str]) -> Result<TestOutput> {
     let env = setup_test(
         get_ankitool_executable(),
