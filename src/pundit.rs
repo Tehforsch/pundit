@@ -23,10 +23,7 @@ use std::env::{current_dir, set_current_dir};
 fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();
     let entry_folder = current_dir()?;
-    let note_folder = match args.folder {
-        None => PathBuf::from("test").canonicalize()?,
-        Some(ref f) => f.clone().canonicalize()?,
-    };
+    let note_folder = args.folder.canonicalize()?;
     set_current_dir(&note_folder)?;
     let notes = read_notes(&PathBuf::from("."))?;
     run(&entry_folder, &note_folder, args, notes)?;
@@ -279,14 +276,9 @@ fn run(entry_folder: &Path, note_folder: &Path, args: Opts, notes: Vec<Note>) ->
             )?);
             delete_note(&notes, &note?);
         }
-        #[cfg(feature = "pankit")]
-        SubCommand::PankitUpdate(l) => {
+        SubCommand::Pankit(l) => {
             crate::pankit::update_anki(&l.database, &l.pankit_db, &notes, l.conflict_handling)?
         }
-        #[cfg(feature = "pankit")]
-        SubCommand::PankitListModels(l) => crate::anki::list_models(&l.database)?,
-        #[cfg(feature = "pankit")]
-        SubCommand::PankitListDecks(l) => crate::anki::list_decks(&l.database)?,
     }
     Ok(())
 }

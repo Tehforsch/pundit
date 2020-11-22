@@ -1,3 +1,4 @@
+pub mod anki_args;
 pub mod anki_card;
 pub mod anki_collection;
 pub mod anki_deck;
@@ -285,24 +286,4 @@ pub fn read_collection(connection: &Connection) -> rusqlite::Result<AnkiCollecti
     assert!(collection_iterator.next().is_none()); // We should only have one row in this table
 
     Ok(collection?)
-}
-
-pub fn list_models(database: &std::path::PathBuf) -> Result<()> {
-    let connection = Connection::open(database).unwrap();
-    let collection = read_collection(&connection)?;
-    close_connection(connection)?;
-    for model in collection.models.iter() {
-        println!("{}", &model.name);
-    }
-    Ok(())
-}
-
-pub fn list_decks(database: &std::path::PathBuf) -> Result<()> {
-    let connection = Connection::open(database).unwrap();
-    let collection = read_collection(&connection)?;
-    close_connection(connection)?;
-    for deck in collection.decks.iter() {
-        println!("{}", &deck.name)
-    }
-    Ok(())
 }

@@ -12,7 +12,7 @@ pub struct Opts {
     #[clap(subcommand)]
     pub subcmd: SubCommand,
     /// The note folder to run on
-    pub folder: Option<PathBuf>,
+    pub folder: PathBuf,
 }
 
 #[derive(Clap, Debug)]
@@ -24,10 +24,7 @@ pub enum SubCommand {
     Verify(VerifyNotes),
     Delete(DeleteNote),
     Rename(RenameNote),
-    #[cfg(feature = "pankit")]
-    PankitUpdate(PankitUpdate),
-    PankitListModels(PankitListModels),
-    PankitListDecks(PankitListDecks),
+    Pankit(Pankit),
 }
 
 /// List notes.
@@ -79,8 +76,7 @@ pub struct RenameNote {
 
 /// Update the anki contents from the notes.
 #[derive(Clap, Debug)]
-#[cfg(feature = "pankit")]
-pub struct PankitUpdate {
+pub struct Pankit {
     /// The path of the anki database to update
     pub database: PathBuf,
     /// The path of the pankit database which is used for synchronization of the pundit notes and anki database
@@ -92,7 +88,6 @@ pub struct PankitUpdate {
 }
 
 #[derive(Clap, Debug)]
-#[cfg(feature = "pankit")]
 pub enum ConflictHandling {
     /// Show an error if any conflict is encountered. Do not change anything in the database
     GiveError,
@@ -102,22 +97,6 @@ pub enum ConflictHandling {
     Anki,
     /// Blindly use the contents from pundit
     Pundit,
-}
-
-/// List all the models (note types) in the anki database
-#[derive(Clap, Debug)]
-#[cfg(feature = "pankit")]
-pub struct PankitListModels {
-    /// The path of the anki database
-    pub database: PathBuf,
-}
-
-/// List all the models (note types) in the anki database
-#[derive(Clap, Debug)]
-#[cfg(feature = "pankit")]
-pub struct PankitListDecks {
-    /// The path of the anki database
-    pub database: PathBuf,
 }
 
 // Implement the trait

@@ -22,12 +22,7 @@ pub struct TestOutput {
     pub stderr: String,
 }
 
-pub fn setup_test(setups_folder: &Path, test_name: &str) -> TestEnv {
-    let executable_name = if cfg!(windows) {
-        "pundit.exe"
-    } else {
-        "pundit"
-    };
+pub fn setup_test(executable_name: String, setups_folder: &Path, test_name: &str) -> TestEnv {
     let test_dir = env::current_exe().expect("build exe");
     let build_dir = test_dir
         .parent()
@@ -73,8 +68,13 @@ pub fn run_pundit(env: &TestEnv, args: &[&str]) -> (bool, String, String) {
     get_shell_command_output(env.executable.to_str().unwrap(), &new_args)
 }
 
-pub fn run_setup_with_args(setups_folder: &Path, setup_name: &str, args: &[&str]) -> TestOutput {
-    let env = setup_test(setups_folder, setup_name);
+pub fn run_pundit_on_setup_with_args(
+    binary_name: String,
+    setups_folder: &Path,
+    setup_name: &str,
+    args: &[&str],
+) -> TestOutput {
+    let env = setup_test(binary_name, setups_folder, setup_name);
     let output = run_pundit(&env, args);
     TestOutput {
         env: env,
@@ -135,4 +135,20 @@ pub fn copy<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> Result<()> {
     }
 
     Ok(())
+}
+
+pub fn get_pundit_executable() -> String {
+    if cfg!(windows) {
+        "pundit.exe".to_owned()
+    } else {
+        "pundit".to_owned()
+    }
+}
+
+pub fn get_ankitool_executable() -> String {
+    if cfg!(windows) {
+        "ankitool.exe".to_owned()
+    } else {
+        "ankitool".to_owned()
+    }
 }

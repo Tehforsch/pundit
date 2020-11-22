@@ -2,7 +2,7 @@ pub mod setup;
 
 use std::path::Path;
 
-use setup::{run_setup_with_args, TestOutput};
+use setup::{get_pundit_executable, run_pundit_on_setup_with_args, TestOutput};
 
 pub static TEST_SETUPS_PATH: &str = "testSetupsPundit";
 
@@ -16,5 +16,10 @@ fn test_read_notes() {
 }
 
 pub fn run_pundit_on_setup(setup_name: &str, args: &[&str]) -> TestOutput {
-    run_setup_with_args(Path::new(TEST_SETUPS_PATH), setup_name, &args)
+    run_pundit_on_setup_with_args(
+        get_pundit_executable(),
+        Path::new(TEST_SETUPS_PATH),
+        setup_name,
+        &args,
+    )
 }
