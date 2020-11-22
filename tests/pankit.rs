@@ -13,14 +13,14 @@ pub static DEFAULT_PANKIT_FILE_NAME: &str = "pankit.yaml";
 
 #[test]
 fn test_add_existing_note_again() {
-    let out = run_pankit_on_setup("addExistingNoteAgain", &[]).unwrap();
+    let out = run_pankit_update_on_setup("addExistingNoteAgain", &[]).unwrap();
     assert!(out.success);
 }
 
 #[test]
 fn test_add_note_to_empty_collection() {
     assert!(
-        run_pankit_on_setup("addNoteToEmptyCollection", &[])
+        run_pankit_update_on_setup("addNoteToEmptyCollection", &[])
             .unwrap()
             .success
     );
@@ -28,30 +28,44 @@ fn test_add_note_to_empty_collection() {
 
 #[test]
 fn test_conflicting_note_contents_no_database() {
-    let out = run_pankit_on_setup("conflictingNoteContentsNoDatabase", &[]).unwrap();
+    let out = run_pankit_update_on_setup("conflictingNoteContentsNoDatabase", &[]).unwrap();
     assert!(!out.success); // The program should exit with an error because there is a conflict
 }
 
 #[test]
 fn test_conflicting_note_contents_no_database_ignore() {
-    let out = run_pankit_on_setup("conflictingNoteContentsNoDatabase", &["ignore"]).unwrap();
+    let out = run_pankit_update_on_setup("conflictingNoteContentsNoDatabase", &["ignore"]).unwrap();
     assert!(out.success); // The program should simply ignore the conflict
 }
 
 #[test]
 fn test_conflicting_note_contents_no_database_pundit() {
     let out =
-        run_pankit_on_setup("conflictingNoteContentsNoDatabaseForcePundit", &["pundit"]).unwrap();
+        run_pankit_update_on_setup("conflictingNoteContentsNoDatabaseForcePundit", &["pundit"])
+            .unwrap();
     assert!(out.success); // The program should use the changes from the pundit note and not give an error
 }
 
-// #[test]
-// fn test_conflicting_note_contents_no_database_anki() {
-//     let out = run_pankit_on_setup("conflictingNoteContentsNoDatabaseForceAnki", &["anki"]);
-//     assert!(out.is_ok());
-//     let (_env, (success, output)) = out.unwrap();
-//     assert!(success); // The program should exit with an error because there is a conflict
-// }
+#[test]
+fn test_list_models() {
+    let out = run_pankit_on_setup("pankit-list-models", "listModels", &[]).unwrap();
+    assert!(out.output.contains("SomeModel"));
+    assert!(out.output.contains("SomeModel2"));
+    assert!(out.output.contains("SomeModel3"));
+    assert!(out.output.contains("SomeModel4"));
+    assert!(out.output.contains("SomeModel4"));
+}
+
+#[test]
+fn test_list_decks() {
+    let out = run_pankit_on_setup("pankit-list-decks", "listDecks", &[]).unwrap();
+    assert!(out.output.contains("All"));
+    assert!(out.output.contains("All::SubDeck"));
+    assert!(out.output.contains("All::SubDeck::SubSubDeck"));
+    assert!(out.output.contains("All::SubDeck2"));
+    assert!(out.output.contains("SomeDeck"));
+    assert!(out.output.contains("Default"));
+}
 
 fn get_sql_diff(database1: &Path, database2: &Path, tables: &[&str]) -> String {
     let mut args = vec![];
@@ -59,7 +73,7 @@ fn get_sql_diff(database1: &Path, database2: &Path, tables: &[&str]) -> String {
         args.extend_from_slice(&["--table", table]);
     }
     args.extend_from_slice(&[database1.to_str().unwrap(), database2.to_str().unwrap()]);
-    let (_, output) = get_shell_command_output("sqldiff", &args);
+    let (_, output, _stderr) = get_shell_command_output("sqldiff", &args);
     output
 }
 
@@ -97,14 +111,18 @@ fn check_same_notes_and_cards(database1: &Path, database2: &Path) -> Result<()> 
     Ok(())
 }
 
-fn run_pankit_on_setup(setup_name: &str, args: &[&str]) -> Result<TestOutput> {
-    let mut new_args = vec![
-        "pankit",
-        DEFAULT_ANKI_SOURCE_COLLECTION_NAME,
-        DEFAULT_PANKIT_FILE_NAME,
-    ];
+fn run_pankit_update_on_setup(setup_name: &str, args: &[&str]) -> Result<TestOutput> {
+    let mut new_args = vec![DEFAULT_PANKIT_FILE_NAME];
+    new_args.extend_from_slice(args);
+    run_pankit_on_setup("pankit-update", setup_name, &new_args)
+}
+
+fn run_pankit_on_setup(command_name: &str, setup_name: &str, args: &[&str]) -> Result<TestOutput> {
+    let mut new_args = vec![command_name, DEFAULT_ANKI_SOURCE_COLLECTION_NAME];
     new_args.extend_from_slice(args);
     let out = run_setup_with_args(Path::new(TEST_SETUPS_PATH), setup_name, &new_args);
+    println!("STDOUT:\n{}", out.output);
+    println!("STDERR:\n{}", out.stderr);
     check_same_notes_and_cards(
         &out.env.dir.path().join(DEFAULT_ANKI_SOURCE_COLLECTION_NAME),
         &out.env.dir.path().join(DEFAULT_ANKI_TARGET_COLLECTION_NAME),

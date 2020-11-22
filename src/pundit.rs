@@ -280,9 +280,13 @@ fn run(entry_folder: &Path, note_folder: &Path, args: Opts, notes: Vec<Note>) ->
             delete_note(&notes, &note?);
         }
         #[cfg(feature = "pankit")]
-        SubCommand::Pankit(l) => {
+        SubCommand::PankitUpdate(l) => {
             crate::pankit::update_anki(&l.database, &l.pankit_db, &notes, l.conflict_handling)?
         }
+        #[cfg(feature = "pankit")]
+        SubCommand::PankitListModels(l) => crate::anki::list_models(&l.database)?,
+        #[cfg(feature = "pankit")]
+        SubCommand::PankitListDecks(l) => crate::anki::list_decks(&l.database)?,
     }
     Ok(())
 }

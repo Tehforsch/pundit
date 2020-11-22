@@ -76,7 +76,6 @@ fn write_panki_database(pankit_db_path: &Path, pankit_db: &PankitDatabase) -> Re
 
 fn read_pankit_database(pankit_db_path: &Path) -> Result<PankitDatabase> {
     let mb_data = fs::read_to_string(pankit_db_path);
-    println!("?");
     match mb_data {
         Ok(data) => Ok(serde_yaml::from_str(&data).context("Reading pankit database contents")?),
         Err(_err) => {

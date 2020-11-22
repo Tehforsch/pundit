@@ -286,3 +286,23 @@ pub fn read_collection(connection: &Connection) -> rusqlite::Result<AnkiCollecti
 
     Ok(collection?)
 }
+
+pub fn list_models(database: &std::path::PathBuf) -> Result<()> {
+    let connection = Connection::open(database).unwrap();
+    let collection = read_collection(&connection)?;
+    close_connection(connection)?;
+    for model in collection.models.iter() {
+        println!("{}", &model.name);
+    }
+    Ok(())
+}
+
+pub fn list_decks(database: &std::path::PathBuf) -> Result<()> {
+    let connection = Connection::open(database).unwrap();
+    let collection = read_collection(&connection)?;
+    close_connection(connection)?;
+    for deck in collection.decks.iter() {
+        println!("{}", &deck.name)
+    }
+    Ok(())
+}

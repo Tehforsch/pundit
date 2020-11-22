@@ -19,6 +19,7 @@ pub struct TestOutput {
     pub env: TestEnv,
     pub success: bool,
     pub output: String,
+    pub stderr: String,
 }
 
 pub fn setup_test(setups_folder: &Path, test_name: &str) -> TestEnv {
@@ -43,7 +44,8 @@ pub fn setup_test(setups_folder: &Path, test_name: &str) -> TestEnv {
     env
 }
 
-pub fn get_shell_command_output(command: &str, args: &[&str]) -> (bool, String) {
+pub fn get_shell_command_output(command: &str, args: &[&str]) -> (bool, String, String) {
+    dbg!(command, args);
     let child = Command::new(command)
         .args(args)
         .stdin(Stdio::piped())
@@ -57,12 +59,15 @@ pub fn get_shell_command_output(command: &str, args: &[&str]) -> (bool, String) 
     (
         exit_code.success(),
         str::from_utf8(&output.stdout)
-            .expect("Failed to decode fzf output as utf8")
+            .expect("Failed to decode stdout as utf8")
+            .to_owned(),
+        str::from_utf8(&output.stderr)
+            .expect("Failed to decode stderr as utf8")
             .to_owned(),
     )
 }
 
-pub fn run_pundit(env: &TestEnv, args: &[&str]) -> (bool, String) {
+pub fn run_pundit(env: &TestEnv, args: &[&str]) -> (bool, String, String) {
     let mut new_args = vec![env.dir.path().to_str().unwrap()];
     new_args.extend_from_slice(args);
     get_shell_command_output(env.executable.to_str().unwrap(), &new_args)
@@ -73,8 +78,9 @@ pub fn run_setup_with_args(setups_folder: &Path, setup_name: &str, args: &[&str]
     let output = run_pundit(&env, args);
     TestOutput {
         env: env,
-        output: output.1,
         success: output.0,
+        output: output.1,
+        stderr: output.2,
     }
 }
 
