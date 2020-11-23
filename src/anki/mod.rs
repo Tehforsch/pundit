@@ -22,7 +22,6 @@ use crate::anki::anki_model::{get_anki_models_from_json, AnkiModel};
 use crate::anki::anki_note::AnkiNote;
 
 use self::named::get_by_name;
-use self::named::Named;
 
 #[derive(Debug)]
 pub struct AnkiNoteInfo {
