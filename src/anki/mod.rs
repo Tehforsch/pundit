@@ -4,6 +4,7 @@ pub mod anki_collection;
 pub mod anki_deck;
 pub mod anki_model;
 pub mod anki_note;
+mod named;
 
 use crypto::digest::Digest;
 use crypto::sha1::Sha1;
@@ -19,6 +20,9 @@ use crate::anki::anki_collection::AnkiCollection;
 use crate::anki::anki_deck::{get_anki_decks_from_json, AnkiDeck};
 use crate::anki::anki_model::{get_anki_models_from_json, AnkiModel};
 use crate::anki::anki_note::AnkiNote;
+
+use self::named::get_by_name;
+use self::named::Named;
 
 #[derive(Debug)]
 pub struct AnkiNoteInfo {
@@ -52,8 +56,8 @@ pub fn get_new_anki_note_and_cards(
     collection: &AnkiCollection,
     note_info: &AnkiNoteInfo,
 ) -> Result<(AnkiNote, Vec<AnkiCard>)> {
-    let model = get_model_by_name(collection, &note_info.model_name)?;
-    let deck = get_deck_by_name(collection, &note_info.deck_name)?;
+    let model = get_model_by_name(collection, &note_info.deck_name)?;
+    let deck = get_deck_by_name(collection, &note_info.model_name)?;
     let anki_note = get_new_anki_note(note_info, model)?;
     let anki_cards = get_new_anki_cards(model, deck, &anki_note);
     Ok((anki_note, anki_cards))
@@ -63,10 +67,7 @@ pub fn get_deck_by_name<'a>(
     collection: &'a AnkiCollection,
     deck_name: &'a str,
 ) -> Result<&'a AnkiDeck> {
-    collection
-        .decks
-        .iter()
-        .find(|deck| deck.name == deck_name)
+    get_by_name(&collection.decks, deck_name)
         .ok_or_else(|| anyhow!("Invalid name for deck: {}", deck_name))
 }
 
@@ -74,10 +75,7 @@ pub fn get_model_by_name<'a>(
     collection: &'a AnkiCollection,
     model_name: &'a str,
 ) -> Result<&'a AnkiModel> {
-    collection
-        .models
-        .iter()
-        .find(|model| model.name == model_name)
+    get_by_name(&collection.models, model_name)
         .ok_or_else(|| anyhow!("Invalid name for model: {}", model_name))
 }
 
