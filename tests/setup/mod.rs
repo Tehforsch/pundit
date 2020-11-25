@@ -85,6 +85,15 @@ pub fn run_pundit_on_setup_with_args(
     }
 }
 
+pub fn run_pundit_on_env_with_args(env: TestEnv, args: &[&str]) -> TestOutput {
+    let output = run_pundit(&env, args);
+    TestOutput {
+        env: env,
+        success: output.0,
+        output: output.1,
+        stderr: output.2,
+    }
+}
 // Taken from 'Doug' from
 // https://stackoverflow.com/questions/26958489/how-to-copy-a-folder-recursively-in-rust
 pub fn copy<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> Result<()> {
