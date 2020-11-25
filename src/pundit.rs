@@ -126,18 +126,19 @@ fn select_note_with_fzf(notes: &[&Note]) -> Option<Note> {
     let output = run_fzf_on_string(&content);
     let split: Vec<&str> = output.split('\n').collect();
     let query = split[0];
-    let note_info = split[1];
+    let key = split[1];
+    let note_info = split[2];
     let note_info_split: Vec<&str> = note_info.split(';').collect();
-    if note_info_split.len() == 3 {
-        let index = note_info_split[0].parse::<usize>().unwrap();
-        let note = notes[index];
-        assert_eq!(note.filename.to_str().unwrap(), note_info_split[2]);
-        Some((*note).clone())
-    } else {
+    if key != "" || note_info_split.len() != 3 {
         let new_note_title = query.replace("\n", "");
         let note = Note::from_title_and_date(&new_note_title);
         note.write_without_contents().expect("Failed to write note");
         Some(note)
+    } else {
+        let index = note_info_split[0].parse::<usize>().unwrap();
+        let note = notes[index];
+        assert_eq!(note.filename.to_str().unwrap(), note_info_split[2]);
+        Some((*note).clone())
     }
 }
 
@@ -150,6 +151,7 @@ fn run_fzf_on_string(content: &str) -> String {
             "--delimiter=;",
             // "--preview=cat '{3}'",
             "--preview=",
+            "--expect=ctrl-t",
         ])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
