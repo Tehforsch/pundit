@@ -107,6 +107,15 @@ fn select_note_interactively(notes: &[&Note]) {
     };
 }
 
+fn get_link_interactively(notes: &Vec<Note>, filter_str: Option<&str>) {
+    let notes_filtered = get_notes(notes, filter_str);
+    let notes_filtered_coll: Vec<&Note> = notes_filtered.collect();
+    let note = select_note_with_fzf(&notes_filtered_coll);
+    if let Some(n) = note {
+        println!("{}", n.get_link());
+    }
+}
+
 fn select_note_with_fzf(notes: &[&Note]) -> Option<Note> {
     let strs: Vec<String> = notes
         .iter()
@@ -253,6 +262,9 @@ fn run(entry_folder: &Path, note_folder: &Path, args: Opts, notes: Vec<Note>) ->
                 &l.filename,
             )?);
             find_backlinked_note_interactively(&notes, &note?);
+        }
+        SubCommand::Link(l) => {
+            get_link_interactively(&notes, l.filter.as_deref());
         }
         SubCommand::Find(l) => {
             find_note_interactively(&notes, l.filter.as_deref());

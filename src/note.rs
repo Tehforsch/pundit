@@ -1,4 +1,4 @@
-use crate::config::{NOTE_DATE_STR_FORMAT, NOTE_FILENAME_STR_FORMAT, TITLE_STRING};
+use crate::config::{LINK_FORMAT, NOTE_DATE_STR_FORMAT, NOTE_FILENAME_STR_FORMAT, TITLE_STRING};
 use regex::Regex;
 use std::fs;
 use std::fs::File;
@@ -50,6 +50,12 @@ impl Note {
 
     pub fn get_contents(&self) -> Result<String> {
         fs::read_to_string(&self.filename).context("While reading file")
+    }
+
+    pub fn get_link(&self) -> String {
+        LINK_FORMAT
+            .replace("{filename}", &self.filename.to_str().unwrap())
+            .replace("{title}", &self.title)
     }
 }
 

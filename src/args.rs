@@ -18,6 +18,7 @@ pub struct Opts {
 #[derive(Clap, Debug)]
 pub enum SubCommand {
     List(ListNotes),
+    Link(GetLinkText),
     ListBacklinks(ListBacklinks),
     Backlinks(FindBacklinks),
     Find(FindNoteInteractively),
@@ -30,6 +31,13 @@ pub enum SubCommand {
 /// List notes.
 #[derive(Clap, Debug)]
 pub struct ListNotes {
+    /// Optional: Only list notes which contain this string in the title
+    pub filter: Option<String>,
+}
+
+/// Interactively choose a note and then display a properly formatted link for it
+#[derive(Clap, Debug)]
+pub struct GetLinkText {
     /// Optional: Only list notes which contain this string in the title
     pub filter: Option<String>,
 }
