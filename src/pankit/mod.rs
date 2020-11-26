@@ -6,6 +6,7 @@ use crate::anki::update_anki_note_contents;
 use crate::args::ConflictHandling;
 use crate::config::DEFAULT_DECK_STRING;
 use crate::config::DEFAULT_MODEL_STRING;
+use crate::notes::Notes;
 use crate::Note;
 use anyhow::{anyhow, Context, Result};
 use regex::Captures;
@@ -52,7 +53,7 @@ impl<'a> Action<'a> {
 pub fn update_anki(
     path: &Path,
     pankit_db_path: &Path,
-    notes: &[Note],
+    notes: &Notes,
     conflict_handling: ConflictHandling,
 ) -> Result<()> {
     let mut pankit_db = read_pankit_database(pankit_db_path)?;
@@ -91,7 +92,7 @@ fn read_pankit_database(pankit_db_path: &Path) -> Result<PankitDatabase> {
 
 pub fn update_from_pundit_contents(
     connection: &Connection,
-    notes: &[Note],
+    notes: &Notes,
     collection: &AnkiCollection,
     anki_notes: &[AnkiNote],
     mut pankit_db: &mut PankitDatabase,
@@ -267,7 +268,7 @@ fn update_database_entry(pankit_db: &mut PankitDatabase, anki_note: &AnkiNote) {
 
 pub fn get_anki_notes_and_cards_for_pundit_notes(
     collection: &AnkiCollection,
-    notes: &[Note],
+    notes: &Notes,
 ) -> Result<Vec<(AnkiNote, Vec<AnkiCard>)>> {
     let mut results = vec![];
     for pundit_note in notes.iter() {

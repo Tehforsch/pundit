@@ -5,6 +5,8 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 
+use generational_arena::Index;
+
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Local};
 
@@ -17,17 +19,17 @@ struct InvalidTitleError;
 pub struct Note {
     pub filename: PathBuf,
     pub title: String,
-    pub links: Vec<Note>,
+    pub links: Vec<Index>,
 }
 
 impl Note {
-    pub fn from_filename(filename: &Path) -> Result<Note> {
+    pub fn from_filename_no_links(filename: &Path) -> Result<Note> {
         let contents = fs::read_to_string(filename)?;
         Ok(Note {
-            filename: filename.to_path_buf(),
+            filename: filename.to_owned(),
             title: get_title(&contents)
                 .context(format!("Opening {}", filename.to_str().unwrap()))?,
-            links: get_links(&contents)?,
+            links: vec![],
         })
     }
 
@@ -73,25 +75,19 @@ fn get_title(contents: &str) -> Result<String> {
     }
 }
 
+pub fn get_link_filenames(contents: &str) -> Vec<PathBuf> {
+    let re = Regex::new(r"\[\[file:(.*?)\]\[(.*?)\]\]").unwrap();
+    re.captures_iter(contents)
+        .map(|cap| Path::new(&cap[1].to_string()).to_path_buf())
+        .collect()
+}
+
 fn get_filename_from_title(title: &str, date_time: DateTime<Local>) -> String {
     let title_string = title.replace(" ", "_");
     let date_string = format!("{}", date_time.format(NOTE_DATE_STR_FORMAT));
     NOTE_FILENAME_STR_FORMAT
         .replace("{titleString}", &title_string)
         .replace("{dateString}", &date_string)
-}
-
-fn get_links(contents: &str) -> Result<Vec<Note>> {
-    let re = Regex::new(r"\[\[file:(.*?)\]\[(.*?)\]\]").unwrap();
-    let mut links = vec![];
-    for cap in re.captures_iter(contents) {
-        links.push(Note {
-            filename: Path::new(&cap[1].to_string()).to_path_buf(),
-            title: cap[2].to_string(),
-            links: vec![],
-        });
-    }
-    Ok(links)
 }
 
 fn get_title_string(title: &str) -> String {

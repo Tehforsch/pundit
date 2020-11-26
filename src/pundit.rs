@@ -1,4 +1,6 @@
 use anyhow::{anyhow, Context, Result};
+use notes::read_notes;
+use notes::Notes;
 use std::error::Error;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -8,6 +10,7 @@ pub mod anki;
 pub mod args;
 pub mod config;
 pub mod note;
+pub mod notes;
 pub mod pankit;
 
 use crate::args::{Opts, SubCommand};
@@ -26,73 +29,54 @@ fn main() -> Result<(), Box<dyn Error>> {
     let note_folder = args.folder.canonicalize()?;
     set_current_dir(&note_folder)?;
     let notes = read_notes(&PathBuf::from("."))?;
-    run(&entry_folder, &note_folder, args, notes)?;
+    run(&entry_folder, &note_folder, args, &notes)?;
     Ok(())
 }
 
-fn read_notes(note_folder: &Path) -> Result<Vec<Note>> {
-    let mut notes = vec![];
-    for entry in fs::read_dir(note_folder)? {
-        let entry = entry?;
-        let path = entry.path();
-        if path.is_file() {
-            if let Some(extension) = path.extension() {
-                if extension == NOTE_EXTENSION {
-                    notes.push(Note::from_filename(&path)?);
-                }
-            }
-        }
-    }
-    Ok(notes)
-}
-
-fn get_notes<'a>(notes: &'a [Note], filter_str: Option<&'a str>) -> impl Iterator<Item = &'a Note> {
+fn get_notes<'a>(notes: &'a Notes, filter_str: Option<&'a str>) -> impl Iterator<Item = &'a Note> {
     match filter_str {
         None => get_notes_filtered(notes, ""),
         Some(s) => get_notes_filtered(notes, s),
     }
 }
 
-fn get_notes_filtered<'a>(
-    notes: &'a [Note],
-    filter_str: &'a str,
-) -> impl Iterator<Item = &'a Note> {
+fn get_notes_filtered<'a>(notes: &'a Notes, filter_str: &'a str) -> impl Iterator<Item = &'a Note> {
     let cloned_str = filter_str.to_owned();
     notes
         .iter()
         .filter(move |note| note.title.contains(&cloned_str))
 }
 
-fn list_notes(notes: &[Note], filter_str: Option<&str>) {
+fn list_notes(notes: &Notes, filter_str: Option<&str>) {
     for note in get_notes(notes, filter_str) {
         println!("{}", note.title);
     }
 }
 
-fn list_backlinks(notes: &[Note], note: &Note) {
+fn list_backlinks(notes: &Notes, note: &Note) {
     for link in get_backlinks(notes, note) {
         println!("{}", link.title);
     }
 }
 
-fn get_backlinks<'a>(notes: &'a [Note], note: &'a Note) -> impl Iterator<Item = &'a Note> {
+fn get_backlinks<'a>(notes: &'a Notes, note: &'a Note) -> impl Iterator<Item = &'a Note> {
     let selected_filename = note.filename.file_name().unwrap();
     notes.iter().filter(move |n| {
         n.links
             .iter()
             // TODO: This does not work for multi-dir setups!
-            .any(|link| link.filename.file_name().unwrap() == selected_filename)
+            .any(|link| notes.get(*link).filename.file_name().unwrap() == selected_filename)
     })
 }
 
-fn find_backlinked_note_interactively(notes: &[Note], note: &Note) {
+fn find_backlinked_note_interactively(notes: &Notes, note: &Note) {
     let backlinks = get_backlinks(notes, note);
     let backlinks_coll: Vec<&Note> = backlinks.collect();
     // backlinks_coll = ();
     select_note_interactively(&backlinks_coll);
 }
 
-fn find_note_interactively(notes: &[Note], filter_str: Option<&str>) {
+fn find_note_interactively(notes: &Notes, filter_str: Option<&str>) {
     let notes_filtered = get_notes(notes, filter_str);
     let notes_filtered_coll: Vec<&Note> = notes_filtered.collect();
     select_note_interactively(&notes_filtered_coll);
@@ -107,7 +91,7 @@ fn select_note_interactively(notes: &[&Note]) {
     };
 }
 
-fn get_link_interactively(notes: &Vec<Note>, filter_str: Option<&str>) {
+fn get_link_interactively(notes: &Notes, filter_str: Option<&str>) {
     let notes_filtered = get_notes(notes, filter_str);
     let notes_filtered_coll: Vec<&Note> = notes_filtered.collect();
     let note = select_note_with_fzf(&notes_filtered_coll);
@@ -171,49 +155,11 @@ fn run_fzf_on_string(content: &str) -> String {
         .to_owned()
 }
 
-fn verify_note(notes: &[Note], note: &Note) -> bool {
-    let mut note_ok = true;
-    for link in note.links.iter() {
-        let mut linked_note_exists = false;
-        for note2 in notes.iter() {
-            if note2.filename.file_name() == link.filename.file_name() {
-                linked_note_exists = true;
-                break;
-            }
-        }
-        if !linked_note_exists {
-            println!(
-                "Linked note does not exist: {} in {}",
-                link.filename.to_str().unwrap(),
-                note.filename.to_str().unwrap()
-            );
-            note_ok = false;
-        }
-    }
-    note_ok
-}
-
-fn verify_notes(notes: &[Note]) {
-    println!("Checking {} notes", notes.len());
-    let mut num_ok_notes = 0;
-    for note in notes.iter() {
-        let note_ok = verify_note(notes, note);
-        if note_ok {
-            num_ok_notes += 1;
-        }
-    }
-    println!("{} notes ok.", num_ok_notes);
-}
-
-// fn rename_note(_notes: &[Note], note: &Note, new_name: &str) {
-// dbg!("Not implemented yet.");
-// }
-
 fn delete_file(filename: &Path) {
     println!("Deleting {}", filename.to_str().unwrap());
 }
 
-fn delete_note(notes: &[Note], note: &Note) {
+fn delete_note(notes: &Notes, note: &Note) {
     let mut backlink_notes = get_backlinks(notes, note);
     let next = backlink_notes.next();
     match next {
@@ -244,26 +190,31 @@ fn transform_passed_path(entry_folder: &Path, note_folder: &Path, path: &Path) -
         .to_path_buf())
 }
 
-fn run(entry_folder: &Path, note_folder: &Path, args: Opts, notes: Vec<Note>) -> Result<()> {
+fn find_by_filename<'a>(
+    notes: &'a Notes,
+    entry_folder: &Path,
+    note_folder: &Path,
+    filename: &Path,
+) -> Result<&'a Note> {
+    let transformed = transform_passed_path(entry_folder, note_folder, filename)?;
+    println!("{:?}", transformed);
+    notes
+        .find_by_filename(&transformed)
+        .ok_or_else(|| anyhow!("Given note not found: {}", filename.to_str().unwrap()))
+}
+
+fn run(entry_folder: &Path, note_folder: &Path, args: Opts, notes: &Notes) -> Result<()> {
     match args.subcmd {
         SubCommand::List(l) => {
-            list_notes(&notes, l.filter.as_deref());
+            list_notes(notes, l.filter.as_deref());
         }
         SubCommand::ListBacklinks(l) => {
-            let note = Note::from_filename(&transform_passed_path(
-                entry_folder,
-                note_folder,
-                &l.filename,
-            )?);
-            list_backlinks(&notes, &note?);
+            let note = find_by_filename(notes, entry_folder, note_folder, &l.filename)?;
+            list_backlinks(&notes, &note);
         }
         SubCommand::Backlinks(l) => {
-            let note = Note::from_filename(&transform_passed_path(
-                entry_folder,
-                note_folder,
-                &l.filename,
-            )?);
-            find_backlinked_note_interactively(&notes, &note?);
+            let note = find_by_filename(notes, entry_folder, note_folder, &l.filename)?;
+            find_backlinked_note_interactively(&notes, note);
         }
         SubCommand::Link(l) => {
             get_link_interactively(&notes, l.filter.as_deref());
@@ -271,24 +222,14 @@ fn run(entry_folder: &Path, note_folder: &Path, args: Opts, notes: Vec<Note>) ->
         SubCommand::Find(l) => {
             find_note_interactively(&notes, l.filter.as_deref());
         }
-        SubCommand::Verify(_) => {
-            verify_notes(&notes);
-        }
-        SubCommand::Rename(_l) => {
-            // let note = Note::from_filename(&transform_passed_path(
-            // &entry_folder,
-            // note_folder,
-            // &l.filename,
-            // )?);
+        SubCommand::Rename(l) => {
+            todo!();
+            // let note = find_by_filename(notes, entry_folder, note_folder, &l.filename)?;
             // rename_note(&notes, &note, &l.new_name);
         }
         SubCommand::Delete(l) => {
-            let note = Note::from_filename(&transform_passed_path(
-                &entry_folder,
-                note_folder,
-                &l.filename,
-            )?);
-            delete_note(&notes, &note?);
+            let note = find_by_filename(notes, entry_folder, note_folder, &l.filename)?;
+            delete_note(&notes, &note);
         }
         SubCommand::Pankit(l) => {
             crate::pankit::update_anki(&l.database, &l.pankit_db, &notes, l.conflict_handling)?

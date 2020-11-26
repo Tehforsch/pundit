@@ -22,7 +22,6 @@ pub enum SubCommand {
     ListBacklinks(ListBacklinks),
     Backlinks(FindBacklinks),
     Find(FindNoteInteractively),
-    Verify(VerifyNotes),
     Delete(DeleteNote),
     Rename(RenameNote),
     Pankit(Pankit),
@@ -62,10 +61,6 @@ pub struct FindNoteInteractively {
     /// Optional: Only list notes which contain this string in the title
     pub filter: Option<String>,
 }
-
-/// Verify that all links are to valid files
-#[derive(Clap, Debug)]
-pub struct VerifyNotes {}
 
 /// Delete a note. This will only delete the note if no other notes link to it. Otherwise it will print a list of notes linking to this note.
 #[derive(Clap, Debug)]
