@@ -20,6 +20,7 @@ pub struct Note {
     pub filename: PathBuf,
     pub title: String,
     pub links: Vec<Index>,
+    pub backlinks: Vec<Index>,
 }
 
 impl Note {
@@ -30,6 +31,7 @@ impl Note {
             title: get_title(&contents)
                 .context(format!("Opening {}", filename.to_str().unwrap()))?,
             links: vec![],
+            backlinks: vec![],
         })
     }
 
@@ -40,6 +42,7 @@ impl Note {
             filename,
             title: title.to_string(),
             links: vec![],
+            backlinks: vec![],
         }
     }
 

@@ -2,19 +2,19 @@ use anyhow::{anyhow, Context, Result};
 use notes::read_notes;
 use notes::Notes;
 use std::error::Error;
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::str;
 
 pub mod anki;
 pub mod args;
 pub mod config;
+pub mod graph;
 pub mod note;
 pub mod notes;
 pub mod pankit;
 
 use crate::args::{Opts, SubCommand};
-use crate::config::NOTE_EXTENSION;
+use crate::graph::get_connected_component_undirected;
 use crate::note::Note;
 use clap::Clap;
 
@@ -65,7 +65,7 @@ fn get_backlinks<'a>(notes: &'a Notes, note: &'a Note) -> impl Iterator<Item = &
         n.links
             .iter()
             // TODO: This does not work for multi-dir setups!
-            .any(|link| notes.get(*link).filename.file_name().unwrap() == selected_filename)
+            .any(|link| notes[*link].filename.file_name().unwrap() == selected_filename)
     })
 }
 
@@ -101,11 +101,15 @@ fn get_link_interactively(notes: &Notes, filter_str: Option<&str>) {
 }
 
 fn select_note_with_fzf(notes: &[&Note]) -> Option<Note> {
-    let strs: Vec<String> = notes
+    let mut sorted_notes: Vec<&Note> = notes.to_vec();
+    sorted_notes.sort_by(|n1, n2| n1.title.partial_cmp(&n2.title).unwrap());
+
+    let strs: Vec<String> = sorted_notes
         .iter()
         .enumerate()
         .map(|(i, note)| format!("{};{};{}", i, note.title, note.filename.to_str().unwrap()))
         .collect();
+
     let content = strs.join("\n");
     let output = run_fzf_on_string(&content);
     let split: Vec<&str> = output.split('\n').collect();
@@ -120,7 +124,7 @@ fn select_note_with_fzf(notes: &[&Note]) -> Option<Note> {
         Some(note)
     } else {
         let index = note_info_split[0].parse::<usize>().unwrap();
-        let note = notes[index];
+        let note = sorted_notes[index];
         assert_eq!(note.filename.to_str().unwrap(), note_info_split[2]);
         Some((*note).clone())
     }
@@ -175,6 +179,18 @@ fn delete_note(notes: &Notes, note: &Note) {
     }
 }
 
+fn run_find_graph(notes: &Notes, note: &Note) {
+    let connected = get_connected_component_undirected(notes, note);
+    select_note_interactively(&connected);
+}
+
+fn run_list_graph(notes: &Notes, note: &Note) {
+    let connected = get_connected_component_undirected(notes, note);
+    for n in connected.iter() {
+        println!("{}", n.title);
+    }
+}
+
 fn get_args() -> Opts {
     Opts::parse()
 }
@@ -197,7 +213,6 @@ fn find_by_filename<'a>(
     filename: &Path,
 ) -> Result<&'a Note> {
     let transformed = transform_passed_path(entry_folder, note_folder, filename)?;
-    println!("{:?}", transformed);
     notes
         .find_by_filename(&transformed)
         .ok_or_else(|| anyhow!("Given note not found: {}", filename.to_str().unwrap()))
@@ -222,7 +237,7 @@ fn run(entry_folder: &Path, note_folder: &Path, args: Opts, notes: &Notes) -> Re
         SubCommand::Find(l) => {
             find_note_interactively(&notes, l.filter.as_deref());
         }
-        SubCommand::Rename(l) => {
+        SubCommand::Rename(_) => {
             todo!();
             // let note = find_by_filename(notes, entry_folder, note_folder, &l.filename)?;
             // rename_note(&notes, &note, &l.new_name);
@@ -230,6 +245,14 @@ fn run(entry_folder: &Path, note_folder: &Path, args: Opts, notes: &Notes) -> Re
         SubCommand::Delete(l) => {
             let note = find_by_filename(notes, entry_folder, note_folder, &l.filename)?;
             delete_note(&notes, &note);
+        }
+        SubCommand::Graph(l) => {
+            let note = find_by_filename(notes, entry_folder, note_folder, &l.filename)?;
+            run_find_graph(notes, note);
+        }
+        SubCommand::ListGraph(l) => {
+            let note = find_by_filename(notes, entry_folder, note_folder, &l.filename)?;
+            run_list_graph(notes, note);
         }
         SubCommand::Pankit(l) => {
             crate::pankit::update_anki(&l.database, &l.pankit_db, &notes, l.conflict_handling)?

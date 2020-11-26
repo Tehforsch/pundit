@@ -30,6 +30,20 @@ fn test_backlinks() {
     assert!(out.output.lines().any(|line| line == "linkNote2"));
 }
 
+#[test]
+fn test_graph() {
+    let out = run_pundit_on_setup_with_note_name("graph", &["list-graph"], "linkNote1.org");
+    assert!(out.success);
+    assert!(out.output.lines().any(|line| line == "linkNote1"));
+    assert!(out.output.lines().any(|line| line == "linkNote2"));
+    let out = run_pundit_on_setup_with_note_name("graph", &["list-graph"], "linkNote3.org");
+    assert!(out.success);
+    assert!(out.output.lines().any(|line| line == "linkNote3"));
+    assert!(out.output.lines().any(|line| line == "linkNote4"));
+    assert!(out.output.lines().any(|line| line == "linkNote5"));
+    assert!(out.output.lines().any(|line| line == "linkNote6"));
+}
+
 pub fn get_abs_path_of_note(env: TestEnv, note_filename: &str) -> String {
     env.dir
         .path()
@@ -37,6 +51,11 @@ pub fn get_abs_path_of_note(env: TestEnv, note_filename: &str) -> String {
         .to_str()
         .expect("Converting note name to path")
         .to_owned()
+}
+
+pub fn show_output(out: &TestOutput) {
+    println!("Pundit stdout:\n{}", &out.output);
+    println!("Pundit stderr:\n{}", &out.stderr);
 }
 
 pub fn run_pundit_on_setup_with_note_name(
@@ -54,8 +73,7 @@ pub fn run_pundit_on_setup_with_note_name(
     let mut new_args = args.to_vec();
     new_args.extend_from_slice(&[abs_path]);
     let out = run_pundit_on_env_with_args(env, &new_args);
-    println!("Pundit stdout: {}", &out.output);
-    println!("Pundit stderr: {}", &out.stderr);
+    show_output(&out);
     out
 }
 
@@ -66,7 +84,6 @@ pub fn run_pundit_on_setup(setup_name: &str, args: &[&str]) -> TestOutput {
         setup_name,
         &args,
     );
-    println!("Pundit stdout: {}", &out.output);
-    println!("Pundit stderr: {}", &out.stderr);
+    show_output(&out);
     out
 }

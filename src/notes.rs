@@ -1,6 +1,6 @@
 use crate::config::NOTE_EXTENSION;
 use crate::note::{get_link_filenames, Note};
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use generational_arena::{Arena, Index};
 use std::fs;
 use std::path::Path;
@@ -14,17 +14,29 @@ impl Notes {
         self.arena.iter().map(|(_, note)| note)
     }
 
+    pub fn index_iter(&self) -> impl Iterator<Item = (Index, &Note)> {
+        self.arena.iter()
+    }
+
     pub fn len(&self) -> usize {
         self.arena.len()
     }
 
-    pub fn get(&self, index: Index) -> &Note {
-        self.arena.get(index).unwrap()
+    pub fn get(&self, index: Index) -> Option<&Note> {
+        self.arena.get(index)
     }
 
     pub fn find_by_filename(&self, filename: &Path) -> Option<&Note> {
         self.iter()
             .find(|n| n.filename.file_name().unwrap() == filename)
+    }
+}
+
+impl std::ops::Index<Index> for Notes {
+    type Output = Note;
+
+    fn index(&self, index: Index) -> &Self::Output {
+        self.get(index).unwrap()
     }
 }
 
@@ -61,10 +73,13 @@ pub fn set_links(note_index: Index, notes: &mut Arena<Note>) -> Result<()> {
     for link in get_link_filenames(&contents) {
         let mut found = false;
         for i in indices.iter() {
-            let (mut_note, n) = notes.get2_mut(note_index, *i);
-            if link == n.unwrap().filename.file_name().unwrap() {
+            let (n1, n2) = notes.get2_mut(note_index, *i);
+            let note1 = n1.unwrap();
+            let note2 = n2.unwrap();
+            if link == note2.filename.file_name().unwrap() {
                 found = true;
-                mut_note.unwrap().links.push(*i);
+                note1.links.push(*i);
+                note2.links.push(note_index);
             }
         }
         if !found {

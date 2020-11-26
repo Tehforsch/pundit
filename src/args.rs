@@ -25,6 +25,8 @@ pub enum SubCommand {
     Delete(DeleteNote),
     Rename(RenameNote),
     Pankit(Pankit),
+    ListGraph(ListGraph),
+    Graph(FindGraph),
 }
 
 /// List notes.
@@ -75,6 +77,20 @@ pub struct RenameNote {
     /// The path to the note which to rename
     pub filename: PathBuf,
     pub new_name: String,
+}
+
+/// Select a note interactively from the graph component for a specific note
+#[derive(Clap, Debug)]
+pub struct FindGraph {
+    /// The path of the note
+    pub filename: PathBuf,
+}
+
+/// List all notes in the graph component for a specific note
+#[derive(Clap, Debug)]
+pub struct ListGraph {
+    /// The path of the note
+    pub filename: PathBuf,
 }
 
 /// Update the anki contents from the notes.

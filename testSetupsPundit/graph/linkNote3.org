@@ -1,0 +1,2 @@
+#+TITLE: linkNote3
+[[file:linkNote4.org][linkNote4]]
