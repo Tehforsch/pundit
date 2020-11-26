@@ -55,8 +55,8 @@ pub fn get_new_anki_note_and_cards(
     collection: &AnkiCollection,
     note_info: &AnkiNoteInfo,
 ) -> Result<(AnkiNote, Vec<AnkiCard>)> {
-    let model = get_model_by_name(collection, &note_info.deck_name)?;
-    let deck = get_deck_by_name(collection, &note_info.model_name)?;
+    let model = get_model_by_name(collection, &note_info.model_name)?;
+    let deck = get_deck_by_name(collection, &note_info.deck_name)?;
     let anki_note = get_new_anki_note(note_info, model)?;
     let anki_cards = get_new_anki_cards(model, deck, &anki_note);
     Ok((anki_note, anki_cards))

@@ -30,6 +30,15 @@ fn test_add_note_to_empty_collection() {
 }
 
 #[test]
+fn test_colons_in_deck_name() {
+    assert!(
+        run_pankit_on_setup("colonsInDeckName", &[])
+            .unwrap()
+            .success
+    );
+}
+
+#[test]
 fn test_conflicting_note_contents_no_database() {
     let out = run_pankit_on_setup("conflictingNoteContentsNoDatabase", &[]).unwrap();
     assert!(!out.success); // The program should exit with an error because there is a conflict
