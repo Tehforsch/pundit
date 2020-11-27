@@ -42,6 +42,24 @@ fn test_graph() {
     assert!(out.output.lines().any(|line| line == "linkNote4"));
     assert!(out.output.lines().any(|line| line == "linkNote5"));
     assert!(out.output.lines().any(|line| line == "linkNote6"));
+    let out = run_pundit_on_setup_with_note_name("graph", &["list-graph"], "linkNote6.org");
+    assert!(out.success);
+    assert!(out.output.lines().any(|line| line == "linkNote3"));
+    assert!(out.output.lines().any(|line| line == "linkNote4"));
+    assert!(out.output.lines().any(|line| line == "linkNote5"));
+    assert!(out.output.lines().any(|line| line == "linkNote6"));
+}
+
+#[test]
+fn test_multi_dir_setup() {
+    let out = run_pundit_on_setup_with_note_name(
+        "multiDirSetup",
+        &["--multidir", "list-backlinks"],
+        "20200424162358-note1.org",
+    );
+    assert!(out.success);
+    assert!(out.output.lines().any(|line| line == "linkNote1"));
+    assert!(out.output.lines().any(|line| line == "linkNote2"));
 }
 
 pub fn get_abs_path_of_note(env: TestEnv, note_filename: &str) -> String {

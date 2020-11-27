@@ -5,7 +5,7 @@ use anyhow::Result;
 mod setup;
 mod sqlcheck;
 
-use setup::{get_pundit_executable, run_pundit_on_setup_with_args, TestOutput};
+use setup::{get_pundit_executable, run_pundit_on_env_with_args, setup_test, TestOutput};
 
 use crate::sqlcheck::check_same_notes_and_cards;
 
@@ -67,18 +67,20 @@ fn test_add_note_default_deck_model() {
 }
 
 fn run_pankit_on_setup(setup_name: &str, args: &[&str]) -> Result<TestOutput> {
-    let mut new_args = vec![
-        "pankit",
-        DEFAULT_ANKI_SOURCE_COLLECTION_NAME,
-        DEFAULT_PANKIT_FILE_NAME,
-    ];
-    new_args.extend_from_slice(args);
-    let out = run_pundit_on_setup_with_args(
+    let env = setup_test(
         get_pundit_executable(),
         Path::new(TEST_SETUPS_PATH),
         setup_name,
-        &new_args,
     );
+    let anki_collection = env.dir.path().join(&DEFAULT_ANKI_SOURCE_COLLECTION_NAME);
+    let pankit_db = env.dir.path().join(&DEFAULT_PANKIT_FILE_NAME);
+    let mut new_args = vec![
+        "pankit",
+        anki_collection.to_str().unwrap(),
+        pankit_db.to_str().unwrap(),
+    ];
+    new_args.extend_from_slice(args);
+    let out = run_pundit_on_env_with_args(env, &new_args);
     println!("STDOUT:\n{}", out.output);
     println!("STDERR:\n{}", out.stderr);
     check_same_notes_and_cards(

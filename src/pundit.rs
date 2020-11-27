@@ -1,13 +1,14 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Result};
 use notes::read_notes;
 use notes::Notes;
 use std::error::Error;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::str;
 
 pub mod anki;
 pub mod args;
 pub mod config;
+pub mod dir_utils;
 pub mod graph;
 pub mod note;
 pub mod notes;
@@ -21,15 +22,11 @@ use clap::Clap;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
-use std::env::{current_dir, set_current_dir};
-
 fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();
-    let entry_folder = current_dir()?;
     let note_folder = args.folder.canonicalize()?;
-    set_current_dir(&note_folder)?;
-    let notes = read_notes(&PathBuf::from("."))?;
-    run(&entry_folder, &note_folder, args, &notes)?;
+    let notes = read_notes(&note_folder, &args.database, args.multidir)?;
+    run(args, &notes)?;
     Ok(())
 }
 
@@ -60,13 +57,7 @@ fn list_backlinks(notes: &Notes, note: &Note) {
 }
 
 fn get_backlinks<'a>(notes: &'a Notes, note: &'a Note) -> impl Iterator<Item = &'a Note> {
-    let selected_filename = note.filename.file_name().unwrap();
-    notes.iter().filter(move |n| {
-        n.links
-            .iter()
-            // TODO: This does not work for multi-dir setups!
-            .any(|link| notes[*link].filename.file_name().unwrap() == selected_filename)
-    })
+    note.backlinks.iter().map(move |link| &notes[*link])
 }
 
 fn find_backlinked_note_interactively(notes: &Notes, note: &Note) {
@@ -195,40 +186,36 @@ fn get_args() -> Opts {
     Opts::parse()
 }
 
-fn transform_passed_path(entry_folder: &Path, note_folder: &Path, path: &Path) -> Result<PathBuf> {
-    let absolute_path = entry_folder.join(path).canonicalize().context(anyhow!(
-        "Finding file passed as argument: {}",
-        path.to_str().unwrap()
-    ))?;
-    Ok(absolute_path
-        .strip_prefix(note_folder.canonicalize().unwrap())
-        .map_err(|_| anyhow!("Note not in folder: {}", path.to_str().unwrap()))?
-        .to_path_buf())
-}
+// fn transform_passed_path(entry_folder: &Path, note_folder: &Path, path: &Path) -> Result<PathBuf> {
+//     let absolute_path = entry_folder.join(path).canonicalize().context(anyhow!(
+//         "Finding file passed as argument: {}",
+//         path.to_str().unwrap()
+//     ))?;
+//     Ok(absolute_path
+//         .strip_prefix(note_folder.canonicalize().unwrap())
+//         .map_err(|_| anyhow!("Note not in folder: {}", path.to_str().unwrap()))?
+//         .to_path_buf())
+// }
 
-fn find_by_filename<'a>(
-    notes: &'a Notes,
-    entry_folder: &Path,
-    note_folder: &Path,
-    filename: &Path,
-) -> Result<&'a Note> {
-    let transformed = transform_passed_path(entry_folder, note_folder, filename)?;
+fn find_by_filename<'a>(notes: &'a Notes, filename: &Path) -> Result<&'a Note> {
+    // let transformed = transform_passed_path(entry_folder, note_folder, filename)?;
+    let transformed = filename.canonicalize()?;
     notes
         .find_by_filename(&transformed)
         .ok_or_else(|| anyhow!("Given note not found: {}", filename.to_str().unwrap()))
 }
 
-fn run(entry_folder: &Path, note_folder: &Path, args: Opts, notes: &Notes) -> Result<()> {
+fn run(args: Opts, notes: &Notes) -> Result<()> {
     match args.subcmd {
         SubCommand::List(l) => {
             list_notes(notes, l.filter.as_deref());
         }
         SubCommand::ListBacklinks(l) => {
-            let note = find_by_filename(notes, entry_folder, note_folder, &l.filename)?;
+            let note = find_by_filename(notes, &l.filename)?;
             list_backlinks(&notes, &note);
         }
         SubCommand::Backlinks(l) => {
-            let note = find_by_filename(notes, entry_folder, note_folder, &l.filename)?;
+            let note = find_by_filename(notes, &l.filename)?;
             find_backlinked_note_interactively(&notes, note);
         }
         SubCommand::Link(l) => {
@@ -239,19 +226,19 @@ fn run(entry_folder: &Path, note_folder: &Path, args: Opts, notes: &Notes) -> Re
         }
         SubCommand::Rename(_) => {
             todo!();
-            // let note = find_by_filename(notes, entry_folder, note_folder, &l.filename)?;
+            // let note = find_by_filename(notes, &l.filename)?;
             // rename_note(&notes, &note, &l.new_name);
         }
         SubCommand::Delete(l) => {
-            let note = find_by_filename(notes, entry_folder, note_folder, &l.filename)?;
+            let note = find_by_filename(notes, &l.filename)?;
             delete_note(&notes, &note);
         }
         SubCommand::Graph(l) => {
-            let note = find_by_filename(notes, entry_folder, note_folder, &l.filename)?;
+            let note = find_by_filename(notes, &l.filename)?;
             run_find_graph(notes, note);
         }
         SubCommand::ListGraph(l) => {
-            let note = find_by_filename(notes, entry_folder, note_folder, &l.filename)?;
+            let note = find_by_filename(notes, &l.filename)?;
             run_list_graph(notes, note);
         }
         SubCommand::Pankit(l) => {

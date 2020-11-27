@@ -13,6 +13,11 @@ pub struct Opts {
     pub subcmd: SubCommand,
     /// The note folder to run on
     pub folder: PathBuf,
+    /// The path to the database in which to store the notes and their links for fast access times
+    pub database: Option<PathBuf>,
+    /// Run on note setups with multiple directories. This will traverse the entire given directory tree recursively and look for notes.
+    #[clap(short, long)]
+    pub multidir: bool,
 }
 
 #[derive(Clap, Debug)]

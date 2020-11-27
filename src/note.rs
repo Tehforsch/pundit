@@ -6,6 +6,7 @@ use std::io::prelude::*;
 use std::path::{Path, PathBuf};
 
 use generational_arena::Index;
+use serde::{Deserialize, Serialize};
 
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Local};
@@ -15,7 +16,7 @@ struct InvalidNoteError;
 #[derive(Debug, Clone)]
 struct InvalidTitleError;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Note {
     pub filename: PathBuf,
     pub title: String,
@@ -25,7 +26,8 @@ pub struct Note {
 
 impl Note {
     pub fn from_filename_no_links(filename: &Path) -> Result<Note> {
-        let contents = fs::read_to_string(filename)?;
+        let contents = fs::read_to_string(filename)
+            .context(format!("Reading file contents {:?}", filename))?;
         Ok(Note {
             filename: filename.to_owned(),
             title: get_title(&contents)

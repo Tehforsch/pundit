@@ -56,6 +56,7 @@ pub fn update_anki(
     notes: &Notes,
     conflict_handling: ConflictHandling,
 ) -> Result<()> {
+    dbg!(&path, &pankit_db_path);
     let mut pankit_db = read_pankit_database(pankit_db_path)?;
     let connection = Connection::open(path).unwrap();
     let anki_notes = read_notes(&connection)?;
@@ -75,7 +76,7 @@ pub fn update_anki(
 
 fn write_pankit_database(pankit_db_path: &Path, pankit_db: &PankitDatabase) -> Result<()> {
     let data = serde_yaml::to_string(pankit_db).context("While converting pankit db to yaml")?;
-    fs::write(pankit_db_path, data).context("Unable to write session file")?;
+    fs::write(pankit_db_path, data).context("Unable to write pankit file")?;
     Ok(())
 }
 

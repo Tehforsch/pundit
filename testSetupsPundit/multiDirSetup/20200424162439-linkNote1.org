@@ -1,0 +1,3 @@
+#+TITLE: linkNote1
+[[file:20200424162358-note1.org][note1]]
+[[file:subdir/20200424162453-linkNote2.org][Custom text for link]]
