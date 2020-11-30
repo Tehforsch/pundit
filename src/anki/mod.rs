@@ -4,7 +4,7 @@ pub mod anki_collection;
 pub mod anki_deck;
 pub mod anki_model;
 pub mod anki_note;
-mod named;
+pub mod named;
 
 use crypto::digest::Digest;
 use crypto::sha1::Sha1;
@@ -115,7 +115,7 @@ pub fn get_unix_time() -> i64 {
         .expect("Basically the year 2000 bug with unix time running over long. What year is it?")
 }
 
-fn is_note_id_field(field_name: &str) -> bool {
+pub fn is_note_id_field(field_name: &str) -> bool {
     field_name.to_lowercase() == "note id"
 }
 

@@ -1,11 +1,19 @@
 pub mod pankit_note_info;
 
+use crate::anki::anki_deck::AnkiDeck;
+use crate::anki::anki_model::AnkiModel;
 use crate::anki::find_anki_note_in_collection;
 use crate::anki::get_csum;
+use crate::anki::get_unix_time;
+use crate::anki::is_note_id_field;
 use crate::anki::update_anki_note_contents;
 use crate::args::ConflictHandling;
+use crate::config::ANKI_NOTE_FIELD_TEMPLATE;
+use crate::config::ANKI_NOTE_HEADER_TEMPLATE;
 use crate::config::DEFAULT_DECK_STRING;
 use crate::config::DEFAULT_MODEL_STRING;
+use crate::config::ID_MULTIPLIER;
+use crate::fzf::select_interactively;
 use crate::notes::Notes;
 use crate::Note;
 use anyhow::{anyhow, Context, Result};
@@ -19,6 +27,8 @@ use std::path::Path;
 use std::str::FromStr;
 
 use std::cmp::Ordering::{Equal, Greater, Less};
+
+use rand::Rng;
 
 use self::pankit_note_info::PankitDatabase;
 use self::pankit_note_info::PankitNoteInfo;
@@ -56,7 +66,6 @@ pub fn update_anki(
     notes: &Notes,
     conflict_handling: ConflictHandling,
 ) -> Result<()> {
-    dbg!(&path, &pankit_db_path);
     let mut pankit_db = read_pankit_database(pankit_db_path)?;
     let connection = Connection::open(path).unwrap();
     let anki_notes = read_notes(&connection)?;
@@ -398,4 +407,59 @@ fn scan_for_anki_fields(line: &str) -> Option<(String, String)> {
     let re = Regex::new(r"#([a-zA-Z]+) (.*)").unwrap();
     re.captures(line)
         .map(|cap| (cap[1].to_string(), cap[2].to_string()))
+}
+
+pub fn pankit_get_note(database: &std::path::PathBuf) -> Result<()> {
+    let connection = Connection::open(database).unwrap();
+    let collection = read_collection(&connection)?;
+    close_connection(connection)?;
+    let id = get_new_note_id();
+    let model =
+        select_model_interactively(&collection).ok_or_else(|| anyhow!("No model selected"))?;
+    let deck = select_deck_interactively(&collection).ok_or_else(|| anyhow!("No deck selected"))?;
+    print_anki_note(id, model, deck);
+    Ok(())
+}
+
+fn print_anki_note(id: i64, model: &AnkiModel, deck: &AnkiDeck) {
+    print_anki_note_header(id, model, deck);
+    print_fields(model);
+}
+
+fn print_fields(model: &AnkiModel) {
+    for field_name in model
+        .flds
+        .iter()
+        .map(|f| &f.name)
+        .filter(|n| !is_note_id_field(n))
+    {
+        println!(
+            "{}",
+            ANKI_NOTE_FIELD_TEMPLATE.replace("{fieldName}", &field_name)
+        )
+    }
+}
+
+fn print_anki_note_header(id: i64, model: &AnkiModel, deck: &AnkiDeck) {
+    println!(
+        "{}",
+        ANKI_NOTE_HEADER_TEMPLATE
+            .clone()
+            .replace("{id}", &format!("{}", id))
+            .replace("{model}", &model.name)
+            .replace("{deck}", &deck.name)
+    );
+}
+
+fn get_new_note_id() -> i64 {
+    let mut rng = rand::thread_rng();
+    get_unix_time() * ID_MULTIPLIER + rng.gen_range(0, ID_MULTIPLIER)
+}
+
+fn select_model_interactively(collection: &AnkiCollection) -> Option<&AnkiModel> {
+    select_interactively(&collection.models)
+}
+
+fn select_deck_interactively(collection: &AnkiCollection) -> Option<&AnkiDeck> {
+    select_interactively(&collection.decks)
 }

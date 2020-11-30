@@ -14,15 +14,27 @@ fn test_read_notes() {
     let out = run_pundit_on_setup("3linkedNotes", &["list"]);
     assert!(out.success);
     assert!(out.output.lines().any(|line| line == "note1"));
-    assert!(out.output.lines().any(|line| line == "linkNote1"));
     assert!(out.output.lines().any(|line| line == "linkNote2"));
+    assert!(out.output.lines().all(|line| line != ""));
 }
 
 #[test]
 fn test_backlinks() {
     let out = run_pundit_on_setup_with_note_name(
-        "3linkedNotes",
+        "database",
         &["list-backlinks"],
+        "20200424162358-note1.org",
+    );
+    assert!(out.success);
+    assert!(out.output.lines().any(|line| line == "linkNote1"));
+    assert!(out.output.lines().any(|line| line == "linkNote2"));
+}
+
+#[test]
+fn test_database() {
+    let out = run_pundit_on_setup_with_note_name(
+        "3linkedNotes",
+        &["pundit.yaml", "list-backlinks"],
         "20200424162358-note1.org",
     );
     assert!(out.success);
@@ -36,18 +48,21 @@ fn test_graph() {
     assert!(out.success);
     assert!(out.output.lines().any(|line| line == "linkNote1"));
     assert!(out.output.lines().any(|line| line == "linkNote2"));
-    let out = run_pundit_on_setup_with_note_name("graph", &["list-graph"], "linkNote3.org");
-    assert!(out.success);
-    assert!(out.output.lines().any(|line| line == "linkNote3"));
-    assert!(out.output.lines().any(|line| line == "linkNote4"));
-    assert!(out.output.lines().any(|line| line == "linkNote5"));
-    assert!(out.output.lines().any(|line| line == "linkNote6"));
-    let out = run_pundit_on_setup_with_note_name("graph", &["list-graph"], "linkNote6.org");
-    assert!(out.success);
-    assert!(out.output.lines().any(|line| line == "linkNote3"));
-    assert!(out.output.lines().any(|line| line == "linkNote4"));
-    assert!(out.output.lines().any(|line| line == "linkNote5"));
-    assert!(out.output.lines().any(|line| line == "linkNote6"));
+    for name in [
+        "linkNote3.org",
+        "linkNote4.org",
+        "linkNote5.org",
+        "linkNote6.org",
+    ]
+    .iter()
+    {
+        let out = run_pundit_on_setup_with_note_name("graph", &["list-graph"], name);
+        assert!(out.success);
+        assert!(out.output.lines().any(|line| line == "linkNote3"));
+        assert!(out.output.lines().any(|line| line == "linkNote4"));
+        assert!(out.output.lines().any(|line| line == "linkNote5"));
+        assert!(out.output.lines().any(|line| line == "linkNote6"));
+    }
 }
 
 #[test]

@@ -5,3 +5,6 @@ pub static DEFAULT_MODEL_STRING: &str = "#+ANKI_MODEL: ";
 pub static NOTE_EXTENSION: &str = "org";
 pub static NOTE_FILENAME_STR_FORMAT: &str = "{dateString}-{titleString}.org";
 pub static NOTE_DATE_STR_FORMAT: &str = "%Y%m%d%H%M%S";
+pub static ID_MULTIPLIER: i64 = 100000;
+pub static ANKI_NOTE_HEADER_TEMPLATE: &str = "#anki {id} {model} {deck}";
+pub static ANKI_NOTE_FIELD_TEMPLATE: &str = "#{fieldName}";

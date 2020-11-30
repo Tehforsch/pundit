@@ -1,14 +1,15 @@
 use anyhow::{anyhow, Result};
+use fzf::run_fzf;
 use notes::read_notes;
 use notes::Notes;
 use std::error::Error;
 use std::path::Path;
-use std::str;
 
 pub mod anki;
 pub mod args;
 pub mod config;
 pub mod dir_utils;
+pub mod fzf;
 pub mod graph;
 pub mod note;
 pub mod notes;
@@ -18,9 +19,6 @@ use crate::args::{Opts, SubCommand};
 use crate::graph::get_connected_component_undirected;
 use crate::note::Note;
 use clap::Clap;
-
-use std::io::Write;
-use std::process::{Command, Stdio};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();
@@ -102,17 +100,17 @@ fn select_note_with_fzf(notes: &[&Note]) -> Option<Note> {
         .collect();
 
     let content = strs.join("\n");
-    let output = run_fzf_on_string(&content);
+    let output = run_fzf_on_notes_string(&content);
     let split: Vec<&str> = output.split('\n').collect();
     let query = split[0];
+    if split.len() == 1 {
+        return Some(create_new_note_from_query(query));
+    }
     let key = split[1];
     let note_info = split[2];
     let note_info_split: Vec<&str> = note_info.split(';').collect();
     if key != "" || note_info_split.len() != 3 {
-        let new_note_title = query.replace("\n", "");
-        let note = Note::from_title_and_date(&new_note_title);
-        note.write_without_contents().expect("Failed to write note");
-        Some(note)
+        return Some(create_new_note_from_query(query));
     } else {
         let index = note_info_split[0].parse::<usize>().unwrap();
         let note = sorted_notes[index];
@@ -121,33 +119,23 @@ fn select_note_with_fzf(notes: &[&Note]) -> Option<Note> {
     }
 }
 
-fn run_fzf_on_string(content: &str) -> String {
-    let mut child = Command::new("fzf")
-        .args(&[
-            "--print-query",
-            "--margin=1,0",
-            "--with-nth=2",
-            "--delimiter=;",
-            // "--preview=cat '{3}'",
-            "--preview=",
-            "--expect=ctrl-t",
-        ])
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()
-        .expect("Failed to spawn fzf");
+fn create_new_note_from_query(query: &str) -> Note {
+    let new_note_title = query.replace("\n", "");
+    let note = Note::from_title_and_date(&new_note_title);
+    note.write_without_contents().expect("Failed to write note");
+    note
+}
 
-    {
-        let stdin = child.stdin.as_mut().expect("Failed to open stdin");
-        stdin
-            .write_all(content.as_bytes())
-            .expect("Failed to write to stdin");
-    }
-
-    let output = child.wait_with_output().expect("Failed to read stdout");
-    str::from_utf8(&output.stdout)
-        .expect("Failed to decode fzf output as utf8")
-        .to_owned()
+fn run_fzf_on_notes_string(content: &str) -> String {
+    let args = &[
+        "--print-query",
+        "--margin=1,0",
+        "--with-nth=2",
+        "--delimiter=;",
+        "--preview=",
+        "--expect=ctrl-t",
+    ];
+    run_fzf(content, args)
 }
 
 fn delete_file(filename: &Path) {
@@ -244,6 +232,7 @@ fn run(args: Opts, notes: &Notes) -> Result<()> {
         SubCommand::Pankit(l) => {
             crate::pankit::update_anki(&l.database, &l.pankit_db, &notes, l.conflict_handling)?
         }
+        SubCommand::PankitGetNote(l) => crate::pankit::pankit_get_note(&l.database)?,
     }
     Ok(())
 }

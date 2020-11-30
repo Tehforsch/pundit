@@ -70,7 +70,11 @@ impl std::ops::Index<Index> for Notes {
     }
 }
 
-pub fn read_notes_from_database(note_folder: &Path, db_path: &Path) -> Result<Notes> {
+pub fn read_notes_from_database(
+    note_folder: &Path,
+    db_path: &Path,
+    multidir: bool,
+) -> Result<Notes> {
     let mb_notes_db = NotesDatabase::from_file(db_path);
     let mut notes_db = match mb_notes_db {
         Err(_) => NotesDatabase {
@@ -79,24 +83,49 @@ pub fn read_notes_from_database(note_folder: &Path, db_path: &Path) -> Result<No
         },
         Ok(notes_db) => notes_db,
     };
-    for note in notes_db.notes.iter() {
-        println!("{}", note.title);
-    }
-    update_database_from_db_file(note_folder, &mut notes_db)?;
+    update_database_from_db_file(note_folder, &mut notes_db, multidir)?;
     notes_db.to_file(db_path)?;
     Ok(notes_db.notes)
 }
 
-fn update_database_from_db_file(note_folder: &Path, notes_db: &mut NotesDatabase) -> Result<()> {
-    for entry_res in fs::read_dir(note_folder)? {
-        let entry = entry_res?;
-        let modified_timestamp = entry.metadata()?.modified()?;
-        if notes_db
-            .modified_timestamp
-            .map_or(true, |db_timestamp| modified_timestamp > db_timestamp)
-        {
-            dbg!(&entry);
-        }
+fn filter_result<F, T>(it: Box<dyn Iterator<Item = T>>, predicate: F) -> Result<Vec<T>>
+where
+    F: Fn(&T) -> Result<bool>,
+{
+    let results: Result<Vec<(T, bool)>> = it
+        .map(move |t| match predicate(&t) {
+            Err(e) => Err(e),
+            Ok(v) => Ok((t, v)),
+        })
+        .collect();
+    Ok(results?
+        .into_iter()
+        .filter(|(_, v)| *v)
+        .map(|(t, _)| t)
+        .collect())
+}
+
+fn get_newer_files_maybe_recursively(
+    note_folder: &Path,
+    notes_db: &mut NotesDatabase,
+    multidir: bool,
+) -> Result<Vec<PathBuf>> {
+    let files = get_files_maybe_recursively(note_folder, multidir)?;
+    filter_result(Box::new(files.into_iter()), |path| {
+        Ok(match notes_db.modified_timestamp {
+            Some(db_timestamp) => path.metadata()?.modified()? > db_timestamp,
+            None => true,
+        })
+    })
+}
+
+fn update_database_from_db_file(
+    note_folder: &Path,
+    notes_db: &mut NotesDatabase,
+    multidir: bool,
+) -> Result<()> {
+    for file in get_newer_files_maybe_recursively(note_folder, notes_db, multidir)? {
+        dbg!(&file);
     }
     Ok(())
 }
@@ -104,7 +133,7 @@ fn update_database_from_db_file(note_folder: &Path, notes_db: &mut NotesDatabase
 pub fn read_notes(note_folder: &Path, database: &Option<PathBuf>, multidir: bool) -> Result<Notes> {
     match database {
         None => read_notes_from_folder(note_folder, multidir),
-        Some(db_path) => read_notes_from_database(note_folder, db_path),
+        Some(db_path) => read_notes_from_database(note_folder, db_path, multidir),
     }
 }
 

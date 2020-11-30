@@ -3,6 +3,7 @@ use regex::Regex;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
+use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
 use generational_arena::Index;
@@ -26,8 +27,8 @@ pub struct Note {
 
 impl Note {
     pub fn from_filename_no_links(filename: &Path) -> Result<Note> {
-        let contents = fs::read_to_string(filename)
-            .context(format!("Reading file contents {:?}", filename))?;
+        let contents = Note::get_first_line(filename)
+            .context(format!("Reading contents of {:?}", filename))?;
         Ok(Note {
             filename: filename.to_owned(),
             title: get_title(&contents)
@@ -55,6 +56,14 @@ impl Note {
         Ok(())
     }
 
+    pub fn get_first_line(filename: &Path) -> Result<String> {
+        let file = fs::File::open(filename)?;
+        let mut buffer = BufReader::new(file);
+        let mut first_line = String::new();
+        buffer.read_line(&mut first_line)?;
+        Ok(first_line)
+    }
+
     pub fn get_contents(&self) -> Result<String> {
         fs::read_to_string(&self.filename).context("While reading file")
     }
@@ -66,16 +75,14 @@ impl Note {
     }
 }
 
-fn get_title(contents: &str) -> Result<String> {
-    if !contents.starts_with(TITLE_STRING) {
+fn get_title(first_line: &str) -> Result<String> {
+    if !first_line.starts_with(TITLE_STRING) {
         Err(anyhow!("Note does not contain title"))
     } else {
-        let title = contents
-            .lines()
-            .next()
-            .unwrap()
+        let title = first_line
             .strip_prefix(TITLE_STRING)
-            .unwrap();
+            .ok_or_else(|| anyhow!(format!("Invalid title string: {}", first_line)))?
+            .trim_end_matches("\n");
         Ok(title.to_string())
     }
 }

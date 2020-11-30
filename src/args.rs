@@ -30,6 +30,7 @@ pub enum SubCommand {
     Delete(DeleteNote),
     Rename(RenameNote),
     Pankit(Pankit),
+    PankitGetNote(PankitGetNote),
     ListGraph(ListGraph),
     Graph(FindGraph),
 }
@@ -109,6 +110,13 @@ pub struct Pankit {
     /// How to deal with conflicting contents between anki and pundit that cannot be resolved automatically
     #[clap(possible_values = &["ignore", "error", "pundit", "anki"], default_value = "error")]
     pub conflict_handling: ConflictHandling,
+}
+
+/// Add a pankit note by generating an id, allowing to interactively select model/deck and adding empty entries for all the fields.
+#[derive(Clap, Debug)]
+pub struct PankitGetNote {
+    /// The path of the anki database to get available model and fields from.
+    pub database: PathBuf,
 }
 
 #[derive(Clap, Debug)]
