@@ -22,6 +22,7 @@ use clap::Clap;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();
+    println!("{:?}", args.folder);
     let note_folder = args.folder.canonicalize()?;
     let notes = read_notes(&note_folder, &args.database, args.multidir)?;
     run(args, &notes)?;

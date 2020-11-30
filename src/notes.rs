@@ -5,6 +5,7 @@ use crate::note::{get_link_filenames, Note};
 use anyhow::{anyhow, Context, Result};
 use generational_arena::{Arena, Index};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
@@ -31,7 +32,8 @@ impl NotesDatabase {
 
 #[derive(Deserialize, Serialize)]
 pub struct Notes {
-    pub arena: Arena<Note>,
+    arena: Arena<Note>,
+    map: HashMap<PathBuf, Index>,
 }
 
 impl Notes {
@@ -58,8 +60,26 @@ impl Notes {
     pub fn empty() -> Notes {
         Notes {
             arena: Arena::new(),
+            map: HashMap::new(),
         }
     }
+
+    pub fn from_arena_and_map(arena: Arena<Note>, map: HashMap<PathBuf, Index>) -> Result<Notes> {
+        Ok(Notes { arena, map })
+    }
+}
+
+pub fn get_filename_map(arena: &Arena<Note>) -> Result<HashMap<PathBuf, Index>> {
+    let mut map = HashMap::new();
+    for (index, note) in arena.iter() {
+        if map.insert(note.filename.to_owned(), index).is_some() {
+            return Err(anyhow!(format!(
+                "Duplicate filename??: {:?}",
+                note.filename
+            )))?;
+        }
+    }
+    Ok(map)
 }
 
 impl std::ops::Index<Index> for Notes {
@@ -155,44 +175,45 @@ pub fn read_notes_from_folder(note_folder: &Path, multidir: bool) -> Result<Note
             }
         }
     }
+    let map = get_filename_map(&arena)?;
     for i in indices {
-        set_links(&mut arena, i)?;
+        set_links(&mut arena, &map, i)?;
     }
-    Ok(Notes { arena })
+    Notes::from_arena_and_map(arena, map)
 }
 
-pub fn set_links(notes: &mut Arena<Note>, note_index: Index) -> Result<()> {
+pub fn set_links(
+    notes: &mut Arena<Note>,
+    map: &HashMap<PathBuf, Index>,
+    note_index: Index,
+) -> Result<()> {
     let note = notes.get_mut(note_index).unwrap();
     let cloned_filename = note.filename.clone();
     let parent_dir = cloned_filename
         .parent()
         .expect(&format!("Invalid filename for note: {:?}", &note.filename));
     let contents = note.get_contents().context("While reading note contents")?;
-    let indices: Vec<Index> = notes
-        .iter()
-        .map(|(i, _)| i)
-        .filter(|&i| i != note_index)
-        .collect();
-
     for relative_link in get_link_filenames(&contents) {
-        let link = parent_dir.join(relative_link).canonicalize()?;
-        let mut found = false;
-        for i in indices.iter() {
-            let (n1, n2) = notes.get2_mut(note_index, *i);
-            let note1 = n1.unwrap();
-            let note2 = n2.unwrap();
-            if link == note2.filename {
-                found = true;
-                note1.links.push(*i);
-                note2.backlinks.push(note_index);
-            }
+        let link_res = parent_dir.join(&relative_link).canonicalize();
+        let link = link_res.context(format!(
+            "Invalid link in note {:?} : {:?}",
+            &cloned_filename,
+            &(relative_link.clone())
+        ))?;
+        let i = map
+            .get(&link)
+            .ok_or_else(|| anyhow!(format!("Invalid link in file: {}", link.to_str().unwrap())))?;
+        if i == &note_index {
+            return Err(anyhow!(format!(
+                "Note links to itself: {:?}",
+                cloned_filename
+            )));
         }
-        if !found {
-            Err(anyhow!(format!(
-                "Invalid link in file: {}",
-                link.to_str().unwrap()
-            )))?;
-        }
+        let (n1, n2) = notes.get2_mut(note_index, *i);
+        let note1 = n1.unwrap();
+        let note2 = n2.unwrap();
+        note1.links.push(*i);
+        note2.backlinks.push(note_index);
     }
     Ok(())
 }
