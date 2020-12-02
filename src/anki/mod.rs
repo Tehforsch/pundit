@@ -169,7 +169,8 @@ pub fn sort_fields_by_occurence(
 pub fn get_new_anki_note(note_info: &AnkiNoteInfo, model: &AnkiModel) -> Result<AnkiNote> {
     let unix_time = get_unix_time();
     let guid = note_info.id;
-    verify_fields(&note_info.fields, model)?;
+    verify_fields(&note_info.fields, model)
+        .context(format!("While reading fields of note {}", note_info.id))?;
     let sorted_field_entries = sort_fields_by_occurence(note_info, model).context(format!(
         "Looking up field entries for note {}",
         note_info.id

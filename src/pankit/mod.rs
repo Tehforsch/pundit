@@ -404,9 +404,13 @@ fn get_default_deck(pundit_note_contents: &str) -> Option<String> {
 }
 
 fn scan_for_anki_fields(line: &str) -> Option<(String, String)> {
-    let re = Regex::new(r"#([a-zA-Z]+) (.*)").unwrap();
-    re.captures(line)
-        .map(|cap| (cap[1].to_string(), cap[2].to_string()))
+    let re = Regex::new(r"#([a-zA-Z]+) ?(.*)").unwrap();
+    re.captures(line).map(|cap| {
+        (
+            cap[1].to_string(),
+            cap[2].trim_end().trim_start().to_string(),
+        )
+    })
 }
 
 pub fn pankit_get_note(database: &std::path::PathBuf) -> Result<()> {
