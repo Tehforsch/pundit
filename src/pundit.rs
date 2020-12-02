@@ -22,7 +22,6 @@ use clap::Clap;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();
-    println!("{:?}", args.folder);
     let note_folder = args.folder.canonicalize()?;
     let notes = read_notes(&note_folder, &args.database, args.multidir)?;
     run(args, &notes)?;
@@ -105,6 +104,9 @@ fn select_note_with_fzf(notes: &[&Note]) -> Option<Note> {
     let split: Vec<&str> = output.split('\n').collect();
     let query = split[0];
     if split.len() == 1 {
+        if query.trim_start_matches(" ") == "" {
+            return None;
+        }
         return Some(create_new_note_from_query(query));
     }
     let key = split[1];
