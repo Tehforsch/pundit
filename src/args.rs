@@ -23,7 +23,8 @@ pub struct Opts {
 #[derive(Clap, Debug)]
 pub enum SubCommand {
     List(ListNotes),
-    Link(GetLinkText),
+    Link(GetLinkTextInteractively),
+    ShowLink(GetLinkText),
     ListBacklinks(ListBacklinks),
     Backlinks(FindBacklinks),
     Find(FindNoteInteractively),
@@ -42,11 +43,21 @@ pub struct ListNotes {
     pub filter: Option<String>,
 }
 
-/// Interactively choose a note and then display a properly formatted link for it
+/// Interactively choose note 2 and then display a (relative) link from note 1 to note 2.
+#[derive(Clap, Debug)]
+pub struct GetLinkTextInteractively {
+    /// Optional: Only list notes which contain this string in the title
+    pub note1: PathBuf,
+    pub filter: Option<String>,
+}
+
+/// Display a (relative) link from note 1 to note 2.
 #[derive(Clap, Debug)]
 pub struct GetLinkText {
-    /// Optional: Only list notes which contain this string in the title
-    pub filter: Option<String>,
+    /// The filename in which the file is going to be written to
+    pub note1: PathBuf,
+    /// The filename to link to
+    pub note2: PathBuf,
 }
 
 /// List all notes that contain a link to the note

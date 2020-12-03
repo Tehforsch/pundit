@@ -80,13 +80,20 @@ fn select_note_interactively(notes: &[&Note]) {
     };
 }
 
-fn get_link_interactively(notes: &Notes, filter_str: Option<&str>) {
+fn show_link(note1: &Note, note2: &Note) -> Result<()> {
+    let link_text = note2.get_link_from(note1)?;
+    println!("{}", link_text);
+    Ok(())
+}
+
+fn show_link_interactively(notes: &Notes, note_src: &Note, filter_str: Option<&str>) -> Result<()> {
     let notes_filtered = get_notes(notes, filter_str);
     let notes_filtered_coll: Vec<&Note> = notes_filtered.collect();
     let note = select_note_with_fzf(&notes_filtered_coll);
     if let Some(n) = note {
-        println!("{}", n.get_link());
+        show_link(note_src, &n)?;
     }
+    Ok(())
 }
 
 fn select_note_with_fzf(notes: &[&Note]) -> Option<Note> {
@@ -210,7 +217,13 @@ fn run(args: Opts, notes: &Notes) -> Result<()> {
             find_backlinked_note_interactively(&notes, note);
         }
         SubCommand::Link(l) => {
-            get_link_interactively(&notes, l.filter.as_deref());
+            let note1 = find_by_filename(notes, &l.note1)?;
+            show_link_interactively(&notes, &note1, l.filter.as_deref())?;
+        }
+        SubCommand::ShowLink(l) => {
+            let note1 = find_by_filename(notes, &l.note1)?;
+            let note2 = find_by_filename(notes, &l.note2)?;
+            show_link(&note1, &note2)?;
         }
         SubCommand::Find(l) => {
             find_note_interactively(&notes, l.filter.as_deref());

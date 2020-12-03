@@ -34,6 +34,50 @@ fn test_backlinks() {
 }
 
 #[test]
+fn test_link() {
+    let out = run_pundit_on_setup(
+        "3linkedNotes",
+        &[
+            NormalArg("show-link"),
+            RelativePath("20200424162439-linkNote1.org"),
+            RelativePath("20200424162358-note1.org"),
+        ],
+    );
+    let line = out.output.lines().next().unwrap();
+    assert!(out.success);
+    assert_eq!(line, "[[file:20200424162358-note1.org][note1]]");
+
+    let out = run_pundit_on_setup(
+        "multiDirSetup",
+        &[
+            NormalArg("--multidir"),
+            NormalArg("show-link"),
+            RelativePath("20200424162358-note1.org"),
+            RelativePath("subdir/20200424162453-linkNote2.org"),
+        ],
+    );
+    let line = out.output.lines().next().unwrap();
+    assert!(out.success);
+    assert_eq!(
+        line,
+        "[[file:subdir/20200424162453-linkNote2.org][linkNote2]]"
+    );
+
+    let out = run_pundit_on_setup(
+        "multiDirSetup",
+        &[
+            NormalArg("--multidir"),
+            NormalArg("show-link"),
+            RelativePath("subdir/20200424162453-linkNote2.org"),
+            RelativePath("20200424162358-note1.org"),
+        ],
+    );
+    let line = out.output.lines().next().unwrap();
+    assert!(out.success);
+    assert_eq!(line, "[[file:../20200424162358-note1.org][note1]]");
+}
+
+#[test]
 fn test_database() {
 
     // let env = setup_test(

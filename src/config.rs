@@ -1,4 +1,4 @@
-pub static LINK_FORMAT: &str = "[[file:{filename}][{title}]]";
+pub static LINK_FORMAT: &str = "[[file:{relative_path}][{title}]]";
 pub static TITLE_STRING: &str = "#+TITLE: ";
 pub static DEFAULT_DECK_STRING: &str = "#+ANKI_DECK: ";
 pub static DEFAULT_MODEL_STRING: &str = "#+ANKI_MODEL: ";

@@ -32,8 +32,6 @@ pub enum TestArg<'a> {
 
 impl<'a> TestArg<'a> {
     fn convert_to_string(&'a self, dir: &Path) -> Result<String> {
-        dbg!(self);
-        dbg!(dir);
         match self {
             TestArg::NormalArg(s) => Ok(s.to_string()),
             TestArg::AbsolutePath(p) => Ok(p.to_str().unwrap().to_owned()),

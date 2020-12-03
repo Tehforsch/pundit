@@ -12,6 +12,8 @@ use serde::{Deserialize, Serialize};
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Local};
 
+use pathdiff::diff_paths;
+
 #[derive(Debug, Clone)]
 struct InvalidNoteError;
 #[derive(Debug, Clone)]
@@ -68,10 +70,17 @@ impl Note {
         fs::read_to_string(&self.filename).context("While reading file")
     }
 
-    pub fn get_link(&self) -> String {
-        LINK_FORMAT
-            .replace("{filename}", &self.filename.to_str().unwrap())
-            .replace("{title}", &self.title)
+    pub fn get_link_from(&self, note1: &Note) -> Result<String> {
+        let relative_path = diff_paths(&self.filename, note1.filename.parent().unwrap())
+            .ok_or_else(|| {
+                anyhow!(format!(
+                    "Failed to construct relative link from {:?} to {:?}",
+                    note1.filename, self.filename
+                ))
+            })?;
+        Ok(LINK_FORMAT
+            .replace("{relative_path}", relative_path.to_str().unwrap())
+            .replace("{title}", &self.title))
     }
 }
 
