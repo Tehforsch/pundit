@@ -5,7 +5,9 @@ use anyhow::Result;
 mod setup;
 mod sqlcheck;
 
-use setup::{get_pundit_executable, run_pundit_on_env_with_args, setup_test, TestOutput};
+use setup::TestArg;
+use setup::TestArg::{NormalArg, RelativePath};
+use setup::{get_pundit_executable, run_pundit_on_setup_with_args, show_output, TestOutput};
 
 use crate::sqlcheck::check_same_notes_and_cards;
 
@@ -46,14 +48,18 @@ fn test_conflicting_note_contents_no_database() {
 
 #[test]
 fn test_conflicting_note_contents_no_database_ignore() {
-    let out = run_pankit_on_setup("conflictingNoteContentsNoDatabase", &["ignore"]).unwrap();
+    let out =
+        run_pankit_on_setup("conflictingNoteContentsNoDatabase", &[NormalArg("ignore")]).unwrap();
     assert!(out.success); // The program should simply ignore the conflict
 }
 
 #[test]
 fn test_conflicting_note_contents_no_database_pundit() {
-    let out =
-        run_pankit_on_setup("conflictingNoteContentsNoDatabaseForcePundit", &["pundit"]).unwrap();
+    let out = run_pankit_on_setup(
+        "conflictingNoteContentsNoDatabaseForcePundit",
+        &[NormalArg("pundit")],
+    )
+    .unwrap();
     assert!(out.success); // The program should use the changes from the pundit note and not give an error
 }
 
@@ -66,23 +72,21 @@ fn test_add_note_default_deck_model() {
     );
 }
 
-fn run_pankit_on_setup(setup_name: &str, args: &[&str]) -> Result<TestOutput> {
-    let env = setup_test(
+fn run_pankit_on_setup(setup_name: &str, args: &[TestArg]) -> Result<TestOutput> {
+    let mut new_args = vec![
+        NormalArg("pankit"),
+        RelativePath(&DEFAULT_ANKI_SOURCE_COLLECTION_NAME),
+        RelativePath(&DEFAULT_PANKIT_FILE_NAME),
+    ];
+    new_args.extend_from_slice(args);
+    let out = run_pundit_on_setup_with_args(
         get_pundit_executable(),
         Path::new(TEST_SETUPS_PATH),
         setup_name,
-    );
-    let anki_collection = env.dir.path().join(&DEFAULT_ANKI_SOURCE_COLLECTION_NAME);
-    let pankit_db = env.dir.path().join(&DEFAULT_PANKIT_FILE_NAME);
-    let mut new_args = vec![
-        "pankit",
-        anki_collection.to_str().unwrap(),
-        pankit_db.to_str().unwrap(),
-    ];
-    new_args.extend_from_slice(args);
-    let out = run_pundit_on_env_with_args(env, &new_args);
-    println!("STDOUT:\n{}", out.output);
-    println!("STDERR:\n{}", out.stderr);
+        &new_args,
+    )
+    .unwrap();
+    show_output(&out);
     check_same_notes_and_cards(
         &out.env.dir.path().join(DEFAULT_ANKI_SOURCE_COLLECTION_NAME),
         &out.env.dir.path().join(DEFAULT_ANKI_TARGET_COLLECTION_NAME),

@@ -1,8 +1,8 @@
-use std::env;
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::str;
+use std::{env, fmt::Display};
+use std::{ffi::OsStr, fs};
 use tempdir::TempDir;
 
 use anyhow::{Context, Result};
@@ -22,6 +22,30 @@ pub struct TestOutput {
     pub stderr: String,
 }
 
+#[allow(dead_code)] // Somehow rust doesnt realize I use these in other modules.
+#[derive(Debug, Clone)]
+pub enum TestArg<'a> {
+    NormalArg(&'a str),
+    AbsolutePath(&'a Path),
+    RelativePath(&'a str),
+}
+
+impl<'a> TestArg<'a> {
+    fn convert_to_string(&'a self, dir: &Path) -> Result<String> {
+        dbg!(self);
+        dbg!(dir);
+        match self {
+            TestArg::NormalArg(s) => Ok(s.to_string()),
+            TestArg::AbsolutePath(p) => Ok(p.to_str().unwrap().to_owned()),
+            TestArg::RelativePath(p) => Ok(dir.join(p).to_str().unwrap().to_owned()),
+        }
+    }
+}
+
+fn convert_args<'a>(args: &'a [TestArg<'a>], dir: &'a Path) -> Result<Vec<String>> {
+    args.iter().map(|arg| arg.convert_to_string(dir)).collect()
+}
+
 pub fn setup_test(executable_name: String, setups_folder: &Path, test_name: &str) -> TestEnv {
     let test_dir = env::current_exe().expect("build exe");
     let build_dir = test_dir
@@ -39,8 +63,15 @@ pub fn setup_test(executable_name: String, setups_folder: &Path, test_name: &str
     env
 }
 
-pub fn get_shell_command_output(command: &str, args: &[&str]) -> (bool, String, String) {
-    dbg!(command, args);
+pub fn get_shell_command_output<T: Display + AsRef<OsStr>>(
+    command: &str,
+    args: &[T],
+) -> (bool, String, String) {
+    print!("Running {}", command);
+    for arg in args.iter() {
+        print!(" {}", arg);
+    }
+    println!("");
     let child = Command::new(command)
         .args(args)
         .stdin(Stdio::piped())
@@ -62,10 +93,13 @@ pub fn get_shell_command_output(command: &str, args: &[&str]) -> (bool, String, 
     )
 }
 
-pub fn run_pundit(env: &TestEnv, args: &[&str]) -> (bool, String, String) {
-    let mut new_args = vec![env.dir.path().to_str().unwrap()];
+pub fn run_pundit(env: &TestEnv, args: &[TestArg]) -> Result<(bool, String, String)> {
+    let mut new_args = vec![TestArg::AbsolutePath(env.dir.path())];
     new_args.extend_from_slice(args);
-    get_shell_command_output(env.executable.to_str().unwrap(), &new_args)
+    Ok(get_shell_command_output(
+        env.executable.to_str().unwrap(),
+        &convert_args(&new_args, &env.dir.path())?,
+    ))
 }
 
 #[allow(dead_code)] // Not sure why I need this to begin with?
@@ -73,27 +107,28 @@ pub fn run_pundit_on_setup_with_args(
     binary_name: String,
     setups_folder: &Path,
     setup_name: &str,
-    args: &[&str],
-) -> TestOutput {
+    args: &[TestArg],
+) -> Result<TestOutput> {
     let env = setup_test(binary_name, setups_folder, setup_name);
-    let output = run_pundit(&env, args);
-    TestOutput {
-        env: env,
+    let output = run_pundit(&env, args)?;
+    Ok(TestOutput {
+        env,
         success: output.0,
         output: output.1,
         stderr: output.2,
-    }
+    })
 }
 
-pub fn run_pundit_on_env_with_args(env: TestEnv, args: &[&str]) -> TestOutput {
-    let output = run_pundit(&env, args);
-    TestOutput {
-        env: env,
-        success: output.0,
-        output: output.1,
-        stderr: output.2,
-    }
-}
+// pub fn run_pundit_on_env_with_args(env: TestEnv, args: &[TestArg]) -> TestOutput {
+//     let output = run_pundit(&env, args);
+//     TestOutput {
+//         env,
+//         success: output.0,
+//         output: output.1,
+//         stderr: output.2,
+//     }
+// }
+
 // Taken from 'Doug' from
 // https://stackoverflow.com/questions/26958489/how-to-copy-a-folder-recursively-in-rust
 pub fn copy<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> Result<()> {
@@ -145,6 +180,12 @@ pub fn copy<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> Result<()> {
     }
 
     Ok(())
+}
+
+#[allow(dead_code)] // Not sure why I need this to begin with?
+pub fn show_output(out: &TestOutput) {
+    println!("Pundit stdout:\n{}", &out.output);
+    println!("Pundit stderr:\n{}", &out.stderr);
 }
 
 #[allow(dead_code)] // Not sure why I need this to begin with?
