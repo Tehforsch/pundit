@@ -192,7 +192,16 @@ pub fn get_new_anki_note(note_info: &AnkiNoteInfo, model: &AnkiModel) -> Result<
         usn: -1, // Force pushing to server
         tags: "".to_string(),
         flds: joined_fields,
-        sfld: note_info.fields[&sort_field_name].clone(),
+        sfld: note_info
+            .fields
+            .get(&sort_field_name)
+            .ok_or_else(|| {
+                anyhow!(format!(
+                    "Sort field entry refers to a field that does not exist: {} in model {}",
+                    &sort_field_name, model.name,
+                ))
+            })?
+            .clone(),
         csum,
         flags: 0,
         data: "".to_string(),
@@ -272,8 +281,9 @@ pub fn read_collection(connection: &Connection) -> rusqlite::Result<AnkiCollecti
             usn: row.get(6)?,
             ls: row.get(7)?,
             conf: row.get(8)?,
-            models: get_anki_models_from_json(row.get(9)?).unwrap(),
-            decks: get_anki_decks_from_json(row.get(10)?).unwrap(),
+            models: get_anki_models_from_json(row.get(9)?)
+                .expect("Failed to read anki models json"),
+            decks: get_anki_decks_from_json(row.get(10)?).expect("Failed to read anki decks json"),
             dconf: row.get(11)?,
             tags: row.get(12)?,
         })
