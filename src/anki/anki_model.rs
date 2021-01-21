@@ -3,12 +3,12 @@ use serde_json::{Result, Value};
 
 #[derive(Debug, Deserialize)]
 pub struct AnkiField {
-    pub font: String,       // display font
-    pub media: Vec<String>, // array of media. appears to be unused,
-    pub name: String,       // field name,
-    pub ord: i64,           // ordinal of the field - goes from 0 to num fields -1,
-    pub rtl: bool,          // boolean, right-to-left script,
-    pub size: i64,          // font size,
+    pub font: String,               // display font
+    pub media: Option<Vec<String>>, // array of media. appears to be unused,
+    pub name: String,               // field name,
+    pub ord: i64,                   // ordinal of the field - goes from 0 to num fields -1,
+    pub rtl: bool,                  // boolean, right-to-left script,
+    pub size: i64,                  // font size,
     pub sticky: bool, // sticky fields retain the value that was last added when adding new notes
 }
 
@@ -58,21 +58,20 @@ pub struct AnkiModel {
     pub name: String, // model name,
     pub req: Vec<AnkiFieldRequirement>,
     pub sortf: i64, // Integer specifying which field is used for sorting in the browser,
-    pub tags: Vec<String>, // Anki saves the tags of the last added note to the current model, use an empty array [],
+    pub tags: Option<Vec<String>>, // Anki saves the tags of the last added note to the current model, use an empty array [],
     pub tmpls: Vec<AnkiCardTemplate>,
     #[serde(rename(deserialize = "type"))]
     pub type_: i64, // Integer specifying what type of model. 0 for standard, 1 for cloze,
     pub usn: i64, // usn: Update sequence number: used in same way as other usn vales in db,
-    pub vers: Vec<String>, // Legacy version number (unused), use an empty array []
+    pub vers: Option<Vec<String>>, // Legacy version number (unused), use an empty array []
 }
 
 pub fn get_anki_models_from_json(json_data: String) -> Result<Vec<AnkiModel>> {
     let v: Value = serde_json::from_str(&json_data)?;
     if let Value::Object(coll) = v {
-        Ok(coll
-            .keys()
-            .filter_map(|model_value| get_anki_model(&coll[model_value]).ok())
-            .collect())
+        coll.keys()
+            .map(|model_value| get_anki_model(&coll[model_value]))
+            .collect()
     } else {
         panic!("Invalid anki database: model json is not a map of id/model pairs.");
     }
