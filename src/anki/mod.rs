@@ -184,6 +184,7 @@ pub fn get_new_anki_note(note_info: &AnkiNoteInfo, model: &AnkiModel) -> Result<
         .ok_or_else(|| anyhow!("Sort field entry in anki model is invalid for this model?"))?
         .name
         .to_string();
+    let sfld_contents = get_sort_field_contents(&sort_field_name, &model, note_info)?;
     Ok(AnkiNote {
         id: note_info.id,
         guid: guid.to_string(),
@@ -192,9 +193,23 @@ pub fn get_new_anki_note(note_info: &AnkiNoteInfo, model: &AnkiModel) -> Result<
         usn: -1, // Force pushing to server
         tags: "".to_string(),
         flds: joined_fields,
-        sfld: note_info
+        sfld: sfld_contents,
+        csum,
+        flags: 0,
+        data: "".to_string(),
+    })
+}
+
+pub fn get_sort_field_contents(
+    sort_field_name: &str,
+    model: &AnkiModel,
+    note_info: &AnkiNoteInfo,
+) -> Result<String> {
+    Ok(match is_note_id_field(&sort_field_name) {
+        true => note_info.id.to_string(),
+        false => note_info
             .fields
-            .get(&sort_field_name)
+            .get(sort_field_name)
             .ok_or_else(|| {
                 anyhow!(format!(
                     "Sort field entry refers to a field that does not exist: {} in model {}",
@@ -202,9 +217,6 @@ pub fn get_new_anki_note(note_info: &AnkiNoteInfo, model: &AnkiModel) -> Result<
                 ))
             })?
             .clone(),
-        csum,
-        flags: 0,
-        data: "".to_string(),
     })
 }
 

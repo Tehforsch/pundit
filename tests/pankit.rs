@@ -72,6 +72,15 @@ fn test_add_note_default_deck_model() {
     );
 }
 
+#[test]
+fn test_add_note_with_model_with_note_id_as_sort_field() {
+    assert!(
+        run_pankit_on_setup("addNoteWithModelWithNoteIdAsSortField", &[])
+            .unwrap()
+            .success
+    );
+}
+
 fn run_pankit_on_setup(setup_name: &str, args: &[TestArg]) -> Result<TestOutput> {
     let mut new_args = vec![
         NormalArg("pankit"),

@@ -1,0 +1,4 @@
+#+TITLE: anki note
+#anki 1 WithNoteId Default
+#Front Front
+#Back Back
