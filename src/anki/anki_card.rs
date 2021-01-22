@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct AnkiCard {
     pub id: i64,   // integer primary key, the epoch milliseconds of when the card was created
     pub nid: i64,  // integer not null, notes.id

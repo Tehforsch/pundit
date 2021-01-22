@@ -41,6 +41,7 @@ use crate::anki::{
     read_notes,
 };
 
+#[derive(Debug)]
 enum Action<'a> {
     ChangeInDatabase(&'a AnkiNote),
     ChangeInDatabaseAndAnki(&'a AnkiNote),
@@ -49,6 +50,7 @@ enum Action<'a> {
     AskUserConflict(NoteConflict<'a>),
 }
 
+#[derive(Debug)]
 struct NoteConflict<'a> {
     anki: &'a AnkiNote,
     pundit: &'a AnkiNote,
@@ -161,6 +163,9 @@ fn filter_conflict_actions(actions: Vec<Action>) -> Vec<Action> {
 
 fn get_actions_if_no_conflict(actions: Vec<Action>) -> Result<Vec<Action>> {
     if actions.iter().any(|action| action.is_conflict()) {
+        for conflict in actions.iter().filter(|action| action.is_conflict()) {
+            println!("{:?}", conflict);
+        }
         Err(anyhow!("There are conflicting notes!"))
     } else {
         Ok(actions)
@@ -306,7 +311,11 @@ fn get_anki_notes_and_cards_for_pundit_note(
         ))?
         .iter()
         .map(|anki_note_info| get_new_anki_note_and_cards(collection, anki_note_info))
-        .collect()
+        .collect::<Result<Vec<(AnkiNote, Vec<AnkiCard>)>>>()
+        .context(format!(
+            "While making new anki cards out of note {}",
+            pundit_note.title
+        ))
 }
 
 fn get_anki_info_for_pundit_note(pundit_note: &Note) -> Result<Vec<AnkiNoteInfo>> {

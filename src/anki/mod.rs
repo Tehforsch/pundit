@@ -273,9 +273,7 @@ pub fn read_notes(connection: &Connection) -> rusqlite::Result<Vec<AnkiNote>> {
         })
     })?;
 
-    Ok(note_iterator
-        .filter_map(|anki_note| anki_note.ok())
-        .collect())
+    note_iterator.map(|anki_note| anki_note).collect()
 }
 
 pub fn read_collection(connection: &Connection) -> rusqlite::Result<AnkiCollection> {
