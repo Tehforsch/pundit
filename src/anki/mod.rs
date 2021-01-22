@@ -253,7 +253,7 @@ pub fn update_anki_note_contents(
     )
 }
 
-pub fn read_notes(connection: &Connection) -> rusqlite::Result<Vec<AnkiNote>> {
+pub fn read_notes(connection: &Connection) -> Result<Vec<AnkiNote>> {
     let mut stmt = connection.prepare(
         "SELECT id, guid, mid, mod, usn, tags, flds, sfld, csum, flags, data FROM notes",
     )?;
@@ -266,14 +266,28 @@ pub fn read_notes(connection: &Connection) -> rusqlite::Result<Vec<AnkiNote>> {
             usn: row.get(4)?,
             tags: row.get(5)?,
             flds: row.get(6)?,
-            sfld: row.get(7)?,
+            sfld: get_string_from_sfld_row(row, 7).unwrap(),
             csum: row.get(8)?,
             flags: row.get(9)?,
             data: row.get(10)?,
         })
     })?;
 
-    note_iterator.map(|anki_note| anki_note).collect()
+    note_iterator
+        .map(|anki_note| anki_note.context("Reading row in notes table"))
+        .collect()
+}
+
+pub fn get_string_from_sfld_row(row: &rusqlite::Row, index: usize) -> Result<String> {
+    // Sometimes the entry in sfld is an integer at which point rusqlite may think that it is indeed an
+    // integer so that it fails to parse for the sfld entry (which most of the time is a string)
+    // Force conversion to string here.
+    let res = row.get_raw_checked(index)?;
+    match res.data_type() {
+        rusqlite::types::Type::Text => Ok(res.as_str()?.to_owned()),
+        rusqlite::types::Type::Integer => Ok(res.as_i64()?.to_string().to_owned()),
+        _ => Err(anyhow!("Invalid type in sfld entry!")),
+    }
 }
 
 pub fn read_collection(connection: &Connection) -> rusqlite::Result<AnkiCollection> {

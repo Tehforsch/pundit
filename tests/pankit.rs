@@ -81,6 +81,15 @@ fn test_add_note_with_model_with_note_id_as_sort_field() {
     );
 }
 
+#[test]
+fn test_integer_in_sort_field() {
+    assert!(
+        run_pankit_on_setup("integerInSortField", &[])
+            .unwrap()
+            .success
+    );
+}
+
 fn run_pankit_on_setup(setup_name: &str, args: &[TestArg]) -> Result<TestOutput> {
     let mut new_args = vec![
         NormalArg("pankit"),
