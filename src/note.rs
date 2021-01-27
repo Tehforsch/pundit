@@ -131,6 +131,16 @@ fn get_title_string(title: &str) -> String {
     format!("#+TITLE: {}", title)
 }
 
+pub fn find_or_create_note(notes: &Notes, folder: &Path, title: &str) -> Result<Note> {
+    // Keep in mind this returns a note which means it clones any already existing note for simplicity.
+    // Otherwise we would need to pass mutable references &mut Notes everywhere in order to add it
+    // to the arena and get a &Note to the new Note that we just created.
+    match notes.find_by_title(title) {
+        Some(note) => Ok(note.clone()),
+        None => create_new_note_from_title(notes, folder, &title),
+    }
+}
+
 pub fn create_new_note_from_title(notes: &Notes, folder: &Path, title: &str) -> Result<Note> {
     match notes.find_by_title(title) {
         Some(n) => {

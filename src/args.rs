@@ -179,8 +179,8 @@ pub struct Journal {
 pub enum JournalSubCommand {
     // Find,
     Yesterday,
-    // Today,
-    // Tomorrow,
+    Today,
+    Tomorrow,
     // Previous,
     // Next,
     // DayBefore,
