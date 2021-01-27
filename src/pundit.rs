@@ -1,24 +1,14 @@
 use anyhow::{anyhow, Result};
-use fzf::run_fzf;
-use notes::read_notes;
-use notes::Notes;
+use pundit::fzf::run_fzf;
+use pundit::notes::read_notes;
+use pundit::notes::Notes;
 use std::error::Error;
 use std::path::Path;
 
-pub mod anki;
-pub mod args;
-pub mod config;
-pub mod dir_utils;
-pub mod fzf;
-pub mod graph;
-pub mod note;
-pub mod notes;
-pub mod pankit;
-
-use crate::args::{Opts, SubCommand};
-use crate::graph::get_connected_component_undirected;
-use crate::note::Note;
 use clap::Clap;
+use pundit::args::{Opts, SubCommand};
+use pundit::graph::get_connected_component_undirected;
+use pundit::note::{create_new_note_from_title, Note};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();
@@ -58,26 +48,26 @@ fn get_backlinks<'a>(notes: &'a Notes, note: &'a Note) -> impl Iterator<Item = &
     note.backlinks.iter().map(move |link| &notes[*link])
 }
 
-fn find_backlinked_note_interactively(notes: &Notes, note: &Note) {
+fn find_backlinked_note_interactively(notes: &Notes, folder: &Path, note: &Note) -> Result<()> {
     let backlinks = get_backlinks(notes, note);
     let backlinks_coll: Vec<&Note> = backlinks.collect();
-    // backlinks_coll = ();
-    select_note_interactively(&backlinks_coll);
+    select_note_interactively(notes, folder, &backlinks_coll)
 }
 
-fn find_note_interactively(notes: &Notes, filter_str: Option<&str>) {
+fn find_note_interactively(notes: &Notes, folder: &Path, filter_str: Option<&str>) -> Result<()> {
     let notes_filtered = get_notes(notes, filter_str);
     let notes_filtered_coll: Vec<&Note> = notes_filtered.collect();
-    select_note_interactively(&notes_filtered_coll);
+    select_note_interactively(notes, folder, &notes_filtered_coll)
 }
 
-fn select_note_interactively(notes: &[&Note]) {
-    let note = select_note_with_fzf(notes);
+fn select_note_interactively(all_notes: &Notes, folder: &Path, notes: &[&Note]) -> Result<()> {
+    let note = select_note_with_fzf(all_notes, folder, notes)?;
     // For interactive use from other processes: Print the filename of the resulting file.
     match note {
-        Some(n) => println!("{}", n.filename.canonicalize().unwrap().to_str().unwrap()),
+        Some(n) => n.show_filename(),
         None => println!(),
     };
+    Ok(())
 }
 
 fn show_link(note1: &Note, note2: &Note) -> Result<()> {
@@ -86,17 +76,22 @@ fn show_link(note1: &Note, note2: &Note) -> Result<()> {
     Ok(())
 }
 
-fn show_link_interactively(notes: &Notes, note_src: &Note, filter_str: Option<&str>) -> Result<()> {
+fn show_link_interactively(
+    notes: &Notes,
+    folder: &Path,
+    note_src: &Note,
+    filter_str: Option<&str>,
+) -> Result<()> {
     let notes_filtered = get_notes(notes, filter_str);
     let notes_filtered_coll: Vec<&Note> = notes_filtered.collect();
-    let note = select_note_with_fzf(&notes_filtered_coll);
+    let note = select_note_with_fzf(notes, folder, &notes_filtered_coll)?;
     if let Some(n) = note {
         show_link(note_src, &n)?;
     }
     Ok(())
 }
 
-fn select_note_with_fzf(notes: &[&Note]) -> Option<Note> {
+fn select_note_with_fzf(all_notes: &Notes, folder: &Path, notes: &[&Note]) -> Result<Option<Note>> {
     let mut sorted_notes: Vec<&Note> = notes.to_vec();
     sorted_notes.sort_by(|n1, n2| n1.title.partial_cmp(&n2.title).unwrap());
 
@@ -112,28 +107,26 @@ fn select_note_with_fzf(notes: &[&Note]) -> Option<Note> {
     let query = split[0];
     if split.len() == 1 {
         if query.trim_start_matches(" ") == "" {
-            return None;
+            return Ok(None);
         }
-        return Some(create_new_note_from_query(query));
+        return Ok(Some(create_new_note_from_query(all_notes, folder, query)?));
     }
     let key = split[1];
     let note_info = split[2];
     let note_info_split: Vec<&str> = note_info.split(';').collect();
     if key != "" || note_info_split.len() != 3 {
-        return Some(create_new_note_from_query(query));
+        return Ok(Some(create_new_note_from_query(all_notes, folder, query)?));
     } else {
         let index = note_info_split[0].parse::<usize>().unwrap();
         let note = sorted_notes[index];
         assert_eq!(note.filename.to_str().unwrap(), note_info_split[2]);
-        Some((*note).clone())
+        Ok(Some((*note).clone()))
     }
 }
 
-fn create_new_note_from_query(query: &str) -> Note {
+fn create_new_note_from_query(notes: &Notes, folder: &Path, query: &str) -> Result<Note> {
     let new_note_title = query.replace("\n", "");
-    let note = Note::from_title_and_date(&new_note_title);
-    note.write_without_contents().expect("Failed to write note");
-    note
+    create_new_note_from_title(notes, folder, &new_note_title)
 }
 
 fn run_fzf_on_notes_string(content: &str) -> String {
@@ -168,9 +161,9 @@ fn delete_note(notes: &Notes, note: &Note) {
     }
 }
 
-fn run_find_graph(notes: &Notes, note: &Note) {
+fn run_find_graph(notes: &Notes, folder: &Path, note: &Note) -> Result<()> {
     let connected = get_connected_component_undirected(notes, note);
-    select_note_interactively(&connected);
+    select_note_interactively(notes, folder, &connected)
 }
 
 fn run_list_graph(notes: &Notes, note: &Note) {
@@ -214,19 +207,23 @@ fn run(args: Opts, notes: &Notes) -> Result<()> {
         }
         SubCommand::Backlinks(l) => {
             let note = find_by_filename(notes, &l.filename)?;
-            find_backlinked_note_interactively(&notes, note);
+            find_backlinked_note_interactively(&notes, &args.folder, note)?;
         }
         SubCommand::Link(l) => {
             let note1 = find_by_filename(notes, &l.note1)?;
-            show_link_interactively(&notes, &note1, l.filter.as_deref())?;
+            show_link_interactively(&notes, &args.folder, &note1, l.filter.as_deref())?;
         }
         SubCommand::ShowLink(l) => {
             let note1 = find_by_filename(notes, &l.note1)?;
             let note2 = find_by_filename(notes, &l.note2)?;
             show_link(&note1, &note2)?;
         }
+        SubCommand::New(l) => {
+            let note = create_new_note_from_title(notes, &args.folder, &l.title)?;
+            note.show_filename();
+        }
         SubCommand::Find(l) => {
-            find_note_interactively(&notes, l.filter.as_deref());
+            find_note_interactively(&notes, &args.folder, l.filter.as_deref())?;
         }
         SubCommand::Rename(_) => {
             todo!();
@@ -239,16 +236,19 @@ fn run(args: Opts, notes: &Notes) -> Result<()> {
         }
         SubCommand::Graph(l) => {
             let note = find_by_filename(notes, &l.filename)?;
-            run_find_graph(notes, note);
+            run_find_graph(notes, &args.folder, note)?;
         }
         SubCommand::ListGraph(l) => {
             let note = find_by_filename(notes, &l.filename)?;
             run_list_graph(notes, note);
         }
         SubCommand::Pankit(l) => {
-            crate::pankit::update_anki(&l.database, &l.pankit_db, &notes, l.conflict_handling)?
+            pundit::pankit::update_anki(&l.database, &l.pankit_db, &notes, l.conflict_handling)?
         }
-        SubCommand::PankitGetNote(l) => crate::pankit::pankit_get_note(&l.database)?,
+        SubCommand::PankitGetNote(l) => pundit::pankit::pankit_get_note(&l.database)?,
+        SubCommand::Journal(l) => {
+            pundit::journal::run_journal(&notes, &args.folder, &l)?;
+        }
     }
     Ok(())
 }

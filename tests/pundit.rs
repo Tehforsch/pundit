@@ -1,14 +1,10 @@
 pub mod setup;
 
-use setup::TestArg;
-use setup::TestArg::{NormalArg, RelativePath};
 use std::path::Path;
 
-use setup::{
-    get_pundit_executable, run_pundit_on_setup_with_args, show_output, TestEnv, TestOutput,
-};
+use setup::TestArg::{NormalArg, RelativePath};
 
-pub static TEST_SETUPS_PATH: &str = "testSetupsPundit";
+use setup::{run_pundit_on_setup, TestEnv};
 
 #[test]
 fn test_read_notes() {
@@ -75,6 +71,16 @@ fn test_link() {
     let line = out.output.lines().next().unwrap();
     assert!(out.success);
     assert_eq!(line, "[[file:../20200424162358-note1.org][note1]]");
+}
+
+#[test]
+fn test_new() {
+    let out = run_pundit_on_setup("newNote", &[NormalArg("new"), NormalArg("newTitle")]);
+    let filename = Path::new(out.output.lines().next().unwrap());
+    assert!(filename.exists());
+    assert_eq!(filename.parent().unwrap(), out.env.dir.path());
+    assert!(out.success);
+    // assert_eq!(line, "[[file:../20200424162358-note1.org][note1]]");
 }
 
 #[test]
@@ -149,16 +155,4 @@ pub fn get_abs_path_of_note(env: TestEnv, note_filename: &str) -> String {
         .to_str()
         .expect("Converting note name to path")
         .to_owned()
-}
-
-pub fn run_pundit_on_setup(setup_name: &str, args: &[TestArg]) -> TestOutput {
-    let out = run_pundit_on_setup_with_args(
-        get_pundit_executable(),
-        Path::new(TEST_SETUPS_PATH),
-        setup_name,
-        &args,
-    )
-    .unwrap();
-    show_output(&out);
-    out
 }

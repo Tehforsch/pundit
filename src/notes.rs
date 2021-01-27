@@ -33,7 +33,7 @@ impl NotesDatabase {
 #[derive(Deserialize, Serialize)]
 pub struct Notes {
     arena: Arena<Note>,
-    map: HashMap<PathBuf, Index>,
+    // map: HashMap<PathBuf, Index>,
 }
 
 impl Notes {
@@ -57,15 +57,25 @@ impl Notes {
         self.iter().find(|n| n.filename == filename)
     }
 
+    pub fn find_by_title(&self, title: &str) -> Option<&Note> {
+        self.iter().find(|n| n.title == title)
+    }
+
     pub fn empty() -> Notes {
         Notes {
             arena: Arena::new(),
-            map: HashMap::new(),
+            // map: HashMap::new(),
         }
     }
 
-    pub fn from_arena_and_map(arena: Arena<Note>, map: HashMap<PathBuf, Index>) -> Result<Notes> {
-        Ok(Notes { arena, map })
+    pub fn from_arena_and_map(arena: Arena<Note>) -> Result<Notes> {
+        Ok(Notes { arena })
+    }
+
+    pub fn push(&mut self, note: Note) -> &Note {
+        let idx = self.arena.insert(note);
+        // self.map.insert(note.filename, idx);
+        &self[idx]
     }
 }
 
@@ -179,7 +189,7 @@ pub fn read_notes_from_folder(note_folder: &Path, multidir: bool) -> Result<Note
     for i in indices {
         set_links(&mut arena, &map, i)?;
     }
-    Notes::from_arena_and_map(arena, map)
+    Notes::from_arena_and_map(arena)
 }
 
 pub fn set_links(

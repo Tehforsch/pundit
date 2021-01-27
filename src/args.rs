@@ -28,12 +28,14 @@ pub enum SubCommand {
     ListBacklinks(ListBacklinks),
     Backlinks(FindBacklinks),
     Find(FindNoteInteractively),
+    New(NewNote),
     Delete(DeleteNote),
     Rename(RenameNote),
     Pankit(Pankit),
     PankitGetNote(PankitGetNote),
     ListGraph(ListGraph),
     Graph(FindGraph),
+    Journal(Journal),
 }
 
 /// List notes.
@@ -79,6 +81,13 @@ pub struct FindBacklinks {
 pub struct FindNoteInteractively {
     /// Optional: Only list notes which contain this string in the title
     pub filter: Option<String>,
+}
+
+/// Create a new note with a given title (first ensure that it does not exist already).
+#[derive(Clap, Debug)]
+pub struct NewNote {
+    /// Optional: Only list notes which contain this string in the title
+    pub title: String,
 }
 
 /// Delete a note. This will only delete the note if no other notes link to it. Otherwise it will print a list of notes linking to this note.
@@ -142,7 +151,6 @@ pub enum ConflictHandling {
     Pundit,
 }
 
-// Implement the trait
 impl FromStr for ConflictHandling {
     type Err = &'static str;
 
@@ -156,3 +164,43 @@ impl FromStr for ConflictHandling {
         }
     }
 }
+
+/// Various functions to deal with date based notes
+#[derive(Clap, Debug)]
+pub struct Journal {
+    pub name: String,
+    /// How to deal with conflicting contents between anki and pundit that cannot be resolved automatically
+    // #[clap(possible_values = &["find", "yesterday", "today", "tomorrow", "previous", "next", "daybefore", "dayafter"])]
+    #[clap(subcommand)]
+    pub subcmd: JournalSubCommand,
+}
+
+#[derive(Clap, Debug)]
+pub enum JournalSubCommand {
+    // Find,
+    Yesterday,
+    // Today,
+    // Tomorrow,
+    // Previous,
+    // Next,
+    // DayBefore,
+    // DayAfter,
+}
+
+// impl FromStr for JournalSubCommand {
+//     type Err = &'static str;
+
+//     fn from_str(s: &str) -> Result<Self, Self::Err> {
+//         match s {
+//             "find" => Ok(JournalSubCommand::Find),
+//             "yesterday" => Ok(JournalSubCommand::Yesterday),
+//             "today" => Ok(JournalSubCommand::Today),
+//             "tomorrow" => Ok(JournalSubCommand::Tomorrow),
+//             "previous" => Ok(JournalSubCommand::Previous),
+//             "next" => Ok(JournalSubCommand::Next),
+//             "day-before" => Ok(JournalSubCommand::DayBefore),
+//             "day-after" => Ok(JournalSubCommand::DayAfter),
+//             _ => Err("no match"),
+//         }
+//     }
+// }

@@ -1,4 +1,7 @@
-use crate::config::{LINK_FORMAT, NOTE_DATE_STR_FORMAT, NOTE_FILENAME_STR_FORMAT, TITLE_STRING};
+use crate::{
+    config::{LINK_FORMAT, NOTE_DATE_FORMAT_STR, NOTE_FILENAME_STR_FORMAT, TITLE_STRING},
+    notes::Notes,
+};
 use regex::Regex;
 use std::fs;
 use std::fs::File;
@@ -40,11 +43,17 @@ impl Note {
         })
     }
 
-    pub fn from_title_and_date(title: &str) -> Note {
+    pub fn from_folder_and_title(folder: &Path, title: &str) -> Note {
         let date_time = Local::now();
-        let filename = Path::new(&get_filename_from_title(&title, date_time)).to_path_buf();
+        let filename = Path::new(folder)
+            .join(&get_filename_from_title(&title, date_time))
+            .to_path_buf();
+        Note::empty_note(filename, title)
+    }
+
+    fn empty_note(filename: PathBuf, title: &str) -> Note {
         Note {
-            filename,
+            filename: filename,
             title: title.to_string(),
             links: vec![],
             backlinks: vec![],
@@ -82,6 +91,13 @@ impl Note {
             .replace("{relative_path}", relative_path.to_str().unwrap())
             .replace("{title}", &self.title))
     }
+
+    pub fn show_filename(&self) {
+        println!(
+            "{}",
+            self.filename.canonicalize().unwrap().to_str().unwrap()
+        );
+    }
 }
 
 fn get_title(first_line: &str) -> Result<String> {
@@ -105,7 +121,7 @@ pub fn get_link_filenames(contents: &str) -> Vec<PathBuf> {
 
 fn get_filename_from_title(title: &str, date_time: DateTime<Local>) -> String {
     let title_string = title.replace(" ", "_");
-    let date_string = format!("{}", date_time.format(NOTE_DATE_STR_FORMAT));
+    let date_string = format!("{}", date_time.format(NOTE_DATE_FORMAT_STR));
     NOTE_FILENAME_STR_FORMAT
         .replace("{titleString}", &title_string)
         .replace("{dateString}", &date_string)
@@ -113,6 +129,29 @@ fn get_filename_from_title(title: &str, date_time: DateTime<Local>) -> String {
 
 fn get_title_string(title: &str) -> String {
     format!("#+TITLE: {}", title)
+}
+
+pub fn create_new_note_from_title(notes: &Notes, folder: &Path, title: &str) -> Result<Note> {
+    match notes.find_by_title(title) {
+        Some(n) => {
+            return Err(anyhow!(
+                "Note with title: {} already exists at {:?}",
+                title,
+                n.filename
+            ))
+        }
+        None => {}
+    };
+    let note = Note::from_folder_and_title(folder, title);
+    if note.filename.exists() {
+        return Err(anyhow!(
+            "Note with filename {:?} already exists",
+            note.filename
+        ));
+    }
+    note.write_without_contents()
+        .context("Failed to write note")?;
+    Ok(note)
 }
 
 // fn get_link_string(filename: String, title: String) -> String {

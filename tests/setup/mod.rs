@@ -4,10 +4,16 @@ use std::str;
 use std::{env, fmt::Display};
 use std::{ffi::OsStr, fs};
 use tempdir::TempDir;
+pub mod dir_diff;
 
 use anyhow::{Context, Result};
 
+use self::dir_diff::check_dir_diff;
+
 pub static TEST_STAGE_PATH: &str = "punditTestStage";
+pub static DIFF_SETUP_SOURCE_FOLDER: &str = "source";
+pub static DIFF_SETUP_TARGET_FOLDER: &str = "target";
+pub static TEST_SETUPS_PATH: &str = "testSetupsPundit";
 
 #[derive(Debug)]
 pub struct TestEnv {
@@ -100,6 +106,49 @@ pub fn run_pundit(env: &TestEnv, args: &[TestArg]) -> Result<(bool, String, Stri
     ))
 }
 
+#[allow(dead_code)]
+pub fn run_pundit_diff(
+    binary_name: String,
+    setups_folder: &Path,
+    setup_name: &str,
+    args: &[TestArg],
+) -> Result<TestOutput> {
+    let (env, output) =
+        run_pundit_on_diff_setup_with_args(binary_name, setups_folder, setup_name, args)?;
+    convert_to_test_output(env, output)
+}
+
+#[allow(dead_code)]
+pub fn run_pundit_on_diff_setup_with_args(
+    binary_name: String,
+    setups_folder: &Path,
+    setup_name: &str,
+    args: &[TestArg],
+) -> Result<(TestEnv, (bool, String, String))> {
+    let env = setup_test(binary_name, setups_folder, setup_name);
+    let source_folder = env.dir.path().join(Path::new(DIFF_SETUP_SOURCE_FOLDER));
+    let target_folder = env.dir.path().join(Path::new(DIFF_SETUP_TARGET_FOLDER));
+    let mut new_args = vec![TestArg::AbsolutePath(&source_folder)];
+    new_args.extend_from_slice(args);
+    check_dir_diff(&source_folder, &target_folder);
+    let path = &env.dir.path().clone();
+    // let exe_name = &env.executable.to_str().to_owned();
+    let output = get_shell_command_output(
+        env.executable.to_str().unwrap(),
+        &convert_args(&new_args, &path)?,
+    );
+    Ok((env, output))
+}
+
+fn convert_to_test_output(env: TestEnv, output: (bool, String, String)) -> Result<TestOutput> {
+    Ok(TestOutput {
+        env,
+        success: output.0,
+        output: output.1,
+        stderr: output.2,
+    })
+}
+
 #[allow(dead_code)] // Not sure why I need this to begin with?
 pub fn run_pundit_on_setup_with_args(
     binary_name: String,
@@ -109,23 +158,32 @@ pub fn run_pundit_on_setup_with_args(
 ) -> Result<TestOutput> {
     let env = setup_test(binary_name, setups_folder, setup_name);
     let output = run_pundit(&env, args)?;
-    Ok(TestOutput {
-        env,
-        success: output.0,
-        output: output.1,
-        stderr: output.2,
-    })
+    convert_to_test_output(env, output)
 }
 
-// pub fn run_pundit_on_env_with_args(env: TestEnv, args: &[TestArg]) -> TestOutput {
-//     let output = run_pundit(&env, args);
-//     TestOutput {
-//         env,
-//         success: output.0,
-//         output: output.1,
-//         stderr: output.2,
-//     }
-// }
+pub fn run_pundit_on_diff_setup(setup_name: &str, args: &[TestArg]) -> TestOutput {
+    let out = run_pundit_diff(
+        get_pundit_executable(),
+        Path::new(TEST_SETUPS_PATH),
+        setup_name,
+        &args,
+    )
+    .unwrap();
+    show_output(&out);
+    out
+}
+
+pub fn run_pundit_on_setup(setup_name: &str, args: &[TestArg]) -> TestOutput {
+    let out = run_pundit_on_setup_with_args(
+        get_pundit_executable(),
+        Path::new(TEST_SETUPS_PATH),
+        setup_name,
+        &args,
+    )
+    .unwrap();
+    show_output(&out);
+    out
+}
 
 // Taken from 'Doug' from
 // https://stackoverflow.com/questions/26958489/how-to-copy-a-folder-recursively-in-rust
