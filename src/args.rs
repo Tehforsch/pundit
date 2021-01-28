@@ -15,9 +15,9 @@ pub struct Opts {
     pub folder: PathBuf,
     /// The path to the database in which to store the notes and their links for fast access times
     pub database: Option<PathBuf>,
-    /// Run on note setups with multiple directories. This will traverse the entire given directory tree recursively and look for notes.
+    /// Run only on the top level folder.
     #[clap(short, long)]
-    pub multidir: bool,
+    pub singledir: bool,
 }
 
 #[derive(Clap, Debug)]
