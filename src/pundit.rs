@@ -13,7 +13,7 @@ use pundit::note::{create_new_note_from_title, Note};
 fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();
     let note_folder = args.folder.canonicalize()?;
-    let notes = read_notes(&note_folder, &args.database, args.multidir)?;
+    let notes = read_notes(&note_folder, &args.database, !args.singledir)?;
     run(args, &notes)?;
     Ok(())
 }

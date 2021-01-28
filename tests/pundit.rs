@@ -46,7 +46,6 @@ fn test_link() {
     let out = run_pundit_on_setup(
         "multiDirSetup",
         &[
-            NormalArg("--multidir"),
             NormalArg("show-link"),
             RelativePath("20200424162358-note1.org"),
             RelativePath("subdir/20200424162453-linkNote2.org"),
@@ -62,7 +61,6 @@ fn test_link() {
     let out = run_pundit_on_setup(
         "multiDirSetup",
         &[
-            NormalArg("--multidir"),
             NormalArg("show-link"),
             RelativePath("subdir/20200424162453-linkNote2.org"),
             RelativePath("20200424162358-note1.org"),
@@ -138,7 +136,6 @@ fn test_multi_dir_setup() {
     let out = run_pundit_on_setup(
         "multiDirSetup",
         &[
-            NormalArg("--multidir"),
             NormalArg("list-backlinks"),
             RelativePath("20200424162358-note1.org"),
         ],
