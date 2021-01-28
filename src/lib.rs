@@ -3,6 +3,7 @@ pub mod args;
 pub mod config;
 pub mod dir_utils;
 pub mod file_utils;
+pub mod filter_options;
 pub mod fzf;
 pub mod graph;
 pub mod journal;

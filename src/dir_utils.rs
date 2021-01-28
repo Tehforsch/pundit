@@ -1,8 +1,10 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use std::fs;
 use std::fs::DirEntry;
 use std::path::Path;
 use std::path::PathBuf;
+
+use pathdiff::diff_paths;
 
 fn traverse_folder_files(folder: &Path) -> Result<Box<dyn Iterator<Item = PathBuf>>> {
     let folder_files = Box::new(iter_files(folder)?);
@@ -49,4 +51,13 @@ pub fn get_files(folder: &Path) -> Result<Vec<PathBuf>> {
 
 pub fn get_folders(folder: &Path) -> Result<Vec<PathBuf>> {
     Ok(iter_folders(folder)?.collect())
+}
+
+pub fn get_relative_path(folder: &Path, base_folder: &Path) -> Result<PathBuf> {
+    diff_paths(folder, base_folder).ok_or_else(|| {
+        anyhow!(format!(
+            "Failed to construct relative link from {:?} to {:?}",
+            folder, base_folder
+        ))
+    })
 }

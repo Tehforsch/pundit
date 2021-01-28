@@ -2,6 +2,8 @@ use clap::Clap;
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use crate::filter_options::FilterOptions;
+
 /// Manage notes and links between them.
 #[derive(Clap)]
 #[clap(version = "0.1.0", author = "Toni Peter")]
@@ -41,16 +43,16 @@ pub enum SubCommand {
 /// List notes.
 #[derive(Clap, Debug)]
 pub struct ListNotes {
-    /// Optional: Only list notes which contain this string in the title
-    pub filter: Option<String>,
+    #[clap(subcommand)]
+    pub filter: Option<FilterOptions>,
 }
 
 /// Interactively choose note 2 and then display a (relative) link from note 1 to note 2.
 #[derive(Clap, Debug)]
 pub struct GetLinkTextInteractively {
-    /// Optional: Only list notes which contain this string in the title
     pub note1: PathBuf,
-    pub filter: Option<String>,
+    #[clap(subcommand)]
+    pub filter: Option<FilterOptions>,
 }
 
 /// Display a (relative) link from note 1 to note 2.
@@ -79,8 +81,8 @@ pub struct FindBacklinks {
 /// Select a note from the list of all notes via fzf
 #[derive(Clap, Debug)]
 pub struct FindNoteInteractively {
-    /// Optional: Only list notes which contain this string in the title
-    pub filter: Option<String>,
+    #[clap(subcommand)]
+    pub filter: Option<FilterOptions>,
 }
 
 /// Create a new note with a given title (first ensure that it does not exist already).

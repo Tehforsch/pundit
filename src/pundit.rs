@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
-use pundit::fzf::run_fzf;
 use pundit::notes::read_notes;
 use pundit::notes::Notes;
+use pundit::{filter_options::FilterOptions, fzf::run_fzf};
 use std::error::Error;
 use std::path::Path;
 
@@ -18,22 +18,29 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn get_notes<'a>(notes: &'a Notes, filter_str: Option<&'a str>) -> impl Iterator<Item = &'a Note> {
-    match filter_str {
-        None => get_notes_filtered(notes, ""),
-        Some(s) => get_notes_filtered(notes, s),
+fn get_notes<'a>(
+    notes: &'a Notes,
+    folder: &'a Path,
+    filter: Option<FilterOptions>,
+) -> impl Iterator<Item = &'a Note> {
+    match filter {
+        None => get_notes_filtered(notes, folder, FilterOptions::IncludeAll),
+        Some(s) => get_notes_filtered(notes, folder, s),
     }
 }
 
-fn get_notes_filtered<'a>(notes: &'a Notes, filter_str: &'a str) -> impl Iterator<Item = &'a Note> {
-    let cloned_str = filter_str.to_owned();
+fn get_notes_filtered<'a>(
+    notes: &'a Notes,
+    folder: &'a Path,
+    filter: FilterOptions,
+) -> impl Iterator<Item = &'a Note> {
     notes
         .iter()
-        .filter(move |note| note.title.contains(&cloned_str))
+        .filter(move |note| filter.includes_note(folder, note))
 }
 
-fn list_notes(notes: &Notes, filter_str: Option<&str>) {
-    for note in get_notes(notes, filter_str) {
+fn list_notes(notes: &Notes, folder: &Path, filter: Option<FilterOptions>) {
+    for note in get_notes(notes, folder, filter) {
         println!("{}", note.title);
     }
 }
@@ -54,8 +61,12 @@ fn find_backlinked_note_interactively(notes: &Notes, folder: &Path, note: &Note)
     select_note_interactively(notes, folder, &backlinks_coll)
 }
 
-fn find_note_interactively(notes: &Notes, folder: &Path, filter_str: Option<&str>) -> Result<()> {
-    let notes_filtered = get_notes(notes, filter_str);
+fn find_note_interactively(
+    notes: &Notes,
+    folder: &Path,
+    filter: Option<FilterOptions>,
+) -> Result<()> {
+    let notes_filtered = get_notes(notes, folder, filter);
     let notes_filtered_coll: Vec<&Note> = notes_filtered.collect();
     select_note_interactively(notes, folder, &notes_filtered_coll)
 }
@@ -80,9 +91,9 @@ fn show_link_interactively(
     notes: &Notes,
     folder: &Path,
     note_src: &Note,
-    filter_str: Option<&str>,
+    filter: Option<FilterOptions>,
 ) -> Result<()> {
-    let notes_filtered = get_notes(notes, filter_str);
+    let notes_filtered = get_notes(notes, folder, filter);
     let notes_filtered_coll: Vec<&Note> = notes_filtered.collect();
     let note = select_note_with_fzf(notes, folder, &notes_filtered_coll)?;
     if let Some(n) = note {
@@ -199,7 +210,7 @@ fn find_by_filename<'a>(notes: &'a Notes, filename: &Path) -> Result<&'a Note> {
 fn run(args: Opts, notes: &Notes) -> Result<()> {
     match args.subcmd {
         SubCommand::List(l) => {
-            list_notes(notes, l.filter.as_deref());
+            list_notes(notes, &args.folder, l.filter);
         }
         SubCommand::ListBacklinks(l) => {
             let note = find_by_filename(notes, &l.filename)?;
@@ -211,7 +222,7 @@ fn run(args: Opts, notes: &Notes) -> Result<()> {
         }
         SubCommand::Link(l) => {
             let note1 = find_by_filename(notes, &l.note1)?;
-            show_link_interactively(&notes, &args.folder, &note1, l.filter.as_deref())?;
+            show_link_interactively(&notes, &args.folder, &note1, l.filter)?;
         }
         SubCommand::ShowLink(l) => {
             let note1 = find_by_filename(notes, &l.note1)?;
@@ -223,7 +234,7 @@ fn run(args: Opts, notes: &Notes) -> Result<()> {
             note.show_filename();
         }
         SubCommand::Find(l) => {
-            find_note_interactively(&notes, &args.folder, l.filter.as_deref())?;
+            find_note_interactively(&notes, &args.folder, l.filter)?;
         }
         SubCommand::Rename(_) => {
             todo!();

@@ -145,6 +145,22 @@ fn test_multi_dir_setup() {
     assert!(out.output.lines().any(|line| line == "linkNote2"));
 }
 
+#[test]
+fn test_filter_subdir() {
+    let out = run_pundit_on_setup(
+        "multiDirSetup",
+        &[
+            NormalArg("list"),
+            NormalArg("filter-subfolders"),
+            NormalArg("subdir"),
+        ],
+    );
+    assert!(out.success);
+    assert!(out.output.lines().any(|line| line == "note1"));
+    assert!(out.output.lines().any(|line| line == "linkNote1"));
+    assert!(out.output.lines().all(|line| line != "linkNote2"));
+}
+
 pub fn get_abs_path_of_note(env: TestEnv, note_filename: &str) -> String {
     env.dir
         .path()

@@ -1,5 +1,6 @@
 use crate::{
     config::{LINK_FORMAT, NOTE_DATE_FORMAT_STR, NOTE_FILENAME_STR_FORMAT, TITLE_STRING},
+    dir_utils::get_relative_path,
     notes::Notes,
 };
 use regex::Regex;
@@ -80,13 +81,7 @@ impl Note {
     }
 
     pub fn get_link_from(&self, note1: &Note) -> Result<String> {
-        let relative_path = diff_paths(&self.filename, note1.filename.parent().unwrap())
-            .ok_or_else(|| {
-                anyhow!(format!(
-                    "Failed to construct relative link from {:?} to {:?}",
-                    note1.filename, self.filename
-                ))
-            })?;
+        let relative_path = get_relative_path(&self.filename, note1.filename.parent().unwrap())?;
         Ok(LINK_FORMAT
             .replace("{relative_path}", relative_path.to_str().unwrap())
             .replace("{title}", &self.title))
