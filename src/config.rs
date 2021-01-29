@@ -8,5 +8,5 @@ pub static NOTE_DATE_FORMAT_STR: &str = "%Y%m%d%H%M%S";
 pub static ID_MULTIPLIER: i64 = 100;
 pub static ANKI_NOTE_HEADER_TEMPLATE: &str = "#anki {id} {model} {deck}";
 pub static ANKI_NOTE_FIELD_TEMPLATE: &str = "#{fieldName}";
-pub static JOURNAL_DATE_FORMAT_STR: &str = "%Y_%m_%d";
+pub static JOURNAL_DATE_FORMAT_STR: &str = "%Y %m %d";
 pub static JOURNAL_IN_SUBFOLDERS: bool = true;

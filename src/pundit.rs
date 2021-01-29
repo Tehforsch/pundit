@@ -208,9 +208,10 @@ fn find_by_filename<'a>(notes: &'a Notes, filename: &Path) -> Result<&'a Note> {
 }
 
 fn run(args: Opts, notes: &Notes) -> Result<()> {
+    let base_folder = args.folder.canonicalize()?;
     match args.subcmd {
         SubCommand::List(l) => {
-            list_notes(notes, &args.folder, l.filter);
+            list_notes(notes, &base_folder, l.filter);
         }
         SubCommand::ListBacklinks(l) => {
             let note = find_by_filename(notes, &l.filename)?;
@@ -218,11 +219,11 @@ fn run(args: Opts, notes: &Notes) -> Result<()> {
         }
         SubCommand::Backlinks(l) => {
             let note = find_by_filename(notes, &l.filename)?;
-            find_backlinked_note_interactively(&notes, &args.folder, note)?;
+            find_backlinked_note_interactively(&notes, &base_folder, note)?;
         }
         SubCommand::Link(l) => {
             let note1 = find_by_filename(notes, &l.note1)?;
-            show_link_interactively(&notes, &args.folder, &note1, l.filter)?;
+            show_link_interactively(&notes, &base_folder, &note1, l.filter)?;
         }
         SubCommand::ShowLink(l) => {
             let note1 = find_by_filename(notes, &l.note1)?;
@@ -230,11 +231,11 @@ fn run(args: Opts, notes: &Notes) -> Result<()> {
             show_link(&note1, &note2)?;
         }
         SubCommand::New(l) => {
-            let note = create_new_note_from_title(notes, &args.folder, &l.title)?;
+            let note = create_new_note_from_title(notes, &base_folder, &l.title)?;
             note.show_filename();
         }
         SubCommand::Find(l) => {
-            find_note_interactively(&notes, &args.folder, l.filter)?;
+            find_note_interactively(&notes, &base_folder, l.filter)?;
         }
         SubCommand::Rename(_) => {
             todo!();
@@ -247,7 +248,7 @@ fn run(args: Opts, notes: &Notes) -> Result<()> {
         }
         SubCommand::Graph(l) => {
             let note = find_by_filename(notes, &l.filename)?;
-            run_find_graph(notes, &args.folder, note)?;
+            run_find_graph(notes, &base_folder, note)?;
         }
         SubCommand::ListGraph(l) => {
             let note = find_by_filename(notes, &l.filename)?;
@@ -258,7 +259,7 @@ fn run(args: Opts, notes: &Notes) -> Result<()> {
         }
         SubCommand::PankitGetNote(l) => pundit::pankit::pankit_get_note(&l.database)?,
         SubCommand::Journal(l) => {
-            pundit::journal::run_journal(&notes, &args.folder, &l)?;
+            pundit::journal::run_journal(&notes, &base_folder, &l)?;
         }
     }
     Ok(())

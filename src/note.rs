@@ -16,8 +16,6 @@ use serde::{Deserialize, Serialize};
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Local};
 
-use pathdiff::diff_paths;
-
 #[derive(Debug, Clone)]
 struct InvalidNoteError;
 #[derive(Debug, Clone)]

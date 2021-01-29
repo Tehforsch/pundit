@@ -107,7 +107,7 @@ fn create_folder_if_nonexistent(folder: &Path) -> Result<()> {
 
 fn get_journal_note_title(journal_name: &str, date_time: &DateTime<Local>) -> String {
     format!(
-        "{}_{}",
+        "{} {}",
         journal_name,
         date_time.date().format(config::JOURNAL_DATE_FORMAT_STR)
     )
