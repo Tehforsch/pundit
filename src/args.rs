@@ -1,8 +1,7 @@
 use clap::Clap;
-use std::path::PathBuf;
-use std::str::FromStr;
+use std::{path::PathBuf, str::FromStr};
 
-use crate::filter_options::FilterOptions;
+use crate::{filter_options::FilterOptions, journal_opts::JournalOpts};
 
 /// Manage notes and links between them.
 #[derive(Clap)]
@@ -37,7 +36,7 @@ pub enum SubCommand {
     PankitGetNote(PankitGetNote),
     ListGraph(ListGraph),
     Graph(FindGraph),
-    Journal(Journal),
+    Journal(JournalOpts),
 }
 
 /// List notes.
@@ -128,10 +127,24 @@ pub struct Pankit {
     pub database: PathBuf,
     /// The path of the pankit database which is used for synchronization of the pundit notes and anki database
     pub pankit_db: PathBuf,
-    // #[clap(default_value = "error")]
     /// How to deal with conflicting contents between anki and pundit that cannot be resolved automatically
+    // #[clap(subcommand)]
+    #[clap(default_value = "error")]
     #[clap(possible_values = &["ignore", "error", "pundit", "anki"], default_value = "error")]
     pub conflict_handling: ConflictHandling,
+}
+
+impl FromStr for ConflictHandling {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "error" => Ok(ConflictHandling::GiveError),
+            "ignore" => Ok(ConflictHandling::Ignore),
+            "pundit" => Ok(ConflictHandling::Pundit),
+            "anki" => Ok(ConflictHandling::Anki),
+            _ => Err("no match"),
+        }
+    }
 }
 
 /// Add a pankit note by generating an id, allowing to interactively select model/deck and adding empty entries for all the fields.
@@ -152,57 +165,3 @@ pub enum ConflictHandling {
     /// Blindly use the contents from pundit
     Pundit,
 }
-
-impl FromStr for ConflictHandling {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "error" => Ok(ConflictHandling::GiveError),
-            "ignore" => Ok(ConflictHandling::Ignore),
-            "pundit" => Ok(ConflictHandling::Pundit),
-            "anki" => Ok(ConflictHandling::Anki),
-            _ => Err("no match"),
-        }
-    }
-}
-
-/// Various functions to deal with date based notes
-#[derive(Clap, Debug)]
-pub struct Journal {
-    pub name: String,
-    /// How to deal with conflicting contents between anki and pundit that cannot be resolved automatically
-    // #[clap(possible_values = &["find", "yesterday", "today", "tomorrow", "previous", "next", "daybefore", "dayafter"])]
-    #[clap(subcommand)]
-    pub subcmd: JournalSubCommand,
-}
-
-#[derive(Clap, Debug)]
-pub enum JournalSubCommand {
-    // Find,
-    Yesterday,
-    Today,
-    Tomorrow,
-    // Previous,
-    // Next,
-    // DayBefore,
-    // DayAfter,
-}
-
-// impl FromStr for JournalSubCommand {
-//     type Err = &'static str;
-
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         match s {
-//             "find" => Ok(JournalSubCommand::Find),
-//             "yesterday" => Ok(JournalSubCommand::Yesterday),
-//             "today" => Ok(JournalSubCommand::Today),
-//             "tomorrow" => Ok(JournalSubCommand::Tomorrow),
-//             "previous" => Ok(JournalSubCommand::Previous),
-//             "next" => Ok(JournalSubCommand::Next),
-//             "day-before" => Ok(JournalSubCommand::DayBefore),
-//             "day-after" => Ok(JournalSubCommand::DayAfter),
-//             _ => Err("no match"),
-//         }
-//     }
-// }

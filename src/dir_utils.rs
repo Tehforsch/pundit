@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use std::fs;
 use std::fs::DirEntry;
 use std::path::Path;
@@ -60,4 +60,8 @@ pub fn get_relative_path(folder: &Path, base_folder: &Path) -> Result<PathBuf> {
             folder, base_folder
         ))
     })
+}
+
+pub fn create_folder(folder: &Path) -> Result<()> {
+    fs::create_dir_all(folder).context("While creating folder")
 }

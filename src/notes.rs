@@ -33,6 +33,7 @@ impl NotesDatabase {
 #[derive(Deserialize, Serialize)]
 pub struct Notes {
     arena: Arena<Note>,
+    pub folder: PathBuf,
     // map: HashMap<PathBuf, Index>,
 }
 
@@ -61,21 +62,32 @@ impl Notes {
         self.iter().find(|n| n.title == title)
     }
 
-    pub fn empty() -> Notes {
+    pub fn find_index_by_filename(&self, filename: &Path) -> Option<Index> {
+        self.index_iter()
+            .find(|(_, n)| n.filename == filename)
+            .map(|(i, _)| i)
+    }
+
+    pub fn find_index_by_title(&self, title: &str) -> Option<Index> {
+        self.index_iter()
+            .find(|(_, n)| n.title == title)
+            .map(|(i, _)| i)
+    }
+
+    pub fn empty(folder: PathBuf) -> Notes {
         Notes {
             arena: Arena::new(),
-            // map: HashMap::new(),
+            folder,
         }
     }
 
-    pub fn from_arena_and_map(arena: Arena<Note>) -> Result<Notes> {
-        Ok(Notes { arena })
+    pub fn from_arena_and_map(folder: PathBuf, arena: Arena<Note>) -> Result<Notes> {
+        Ok(Notes { folder, arena })
     }
 
-    pub fn push(&mut self, note: Note) -> &Note {
+    pub fn push(&mut self, note: Note) -> Index {
         let idx = self.arena.insert(note);
-        // self.map.insert(note.filename, idx);
-        &self[idx]
+        idx
     }
 }
 
@@ -109,7 +121,7 @@ pub fn read_notes_from_database(
     let mut notes_db = match mb_notes_db {
         Err(_) => NotesDatabase {
             modified_timestamp: None,
-            notes: Notes::empty(),
+            notes: Notes::empty(note_folder.to_path_buf()),
         },
         Ok(notes_db) => notes_db,
     };
@@ -189,7 +201,7 @@ pub fn read_notes_from_folder(note_folder: &Path, multidir: bool) -> Result<Note
     for i in indices {
         set_links(&mut arena, &map, i)?;
     }
-    Notes::from_arena_and_map(arena)
+    Notes::from_arena_and_map(note_folder.to_path_buf(), arena)
 }
 
 pub fn set_links(
