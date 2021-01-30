@@ -17,11 +17,7 @@ pub fn run_journal(notes: &mut Notes, args: &JournalOpts) -> Result<()> {
         JournalSubCommand::Tomorrow => get_date_tomorrow()?,
         JournalSubCommand::Previous(_) => {
             todo!()
-        } // args::JournalSubCommand::Previous(n) => {
-          //     find_previous_entry(notes, base_folder, &args.name, n)
-          // } // args::JournalSubCommand::Next => {}
-          // args::JournalSubCommand::DayBefore => {}
-          // args::JournalSubCommand::DayAfter => {}
+        }
     };
     let note = find_or_create_journal_note_for_date(notes, &journal_info, &target_date)?;
     note.show_filename();
@@ -38,13 +34,6 @@ fn find_or_create_journal_note_for_date<'a>(
     let target_note =
         find_or_create_note_with_special_content(notes, &journal.folder, &title, link_text)?;
     Ok(target_note)
-    // Ok(match target_note {
-    //     FindNoteResult::Existing(note) => note,
-    //     FindNoteResult::New(note) => {
-    //         append_link_to_main_journal_note(notes, journal, note);
-    //         note
-    //     }
-    // })
 }
 
 fn get_date_yesterday() -> Result<DateTime<Local>> {
@@ -63,8 +52,6 @@ fn get_date_duration(duration: Duration) -> Result<DateTime<Local>> {
     Local::now()
         .checked_add_signed(duration)
         .context("Date overflow")
-    // find_or_create_note_for_date_and_print_filename(notes, base_folder, journal_name, &date_time)?;
-    // Ok(())
 }
 
 // fn find_previous_entry(
