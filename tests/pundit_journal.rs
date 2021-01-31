@@ -3,7 +3,7 @@ pub mod setup;
 use anyhow::Result;
 use regex::Regex;
 use setup::TestArg;
-use setup::{run_pundit_diff, TestArg::NormalArg};
+use setup::{run_pundit_diff, TestArg::NormalArg, TestArg::RelativePath};
 use std::{fs, path::Path};
 
 use pundit::dir_utils::{get_files, get_folders};
@@ -36,4 +36,172 @@ fn test_yesterday() {
     let re = Regex::new(r"\[\[file:\d{14}-work.org\]\[work\]\]").unwrap();
     assert!(re.is_match(lines[1]));
     // assert_eq!(file, "work");
+}
+
+#[test]
+fn test_previous() {
+    let out = run_pundit_on_setup(
+        "journal",
+        &[
+            NormalArg("journal"),
+            NormalArg("--date"),
+            NormalArg("work"),
+            NormalArg("previous"),
+            RelativePath("work/20210000000000-work_2021_02_01.org"),
+        ],
+    );
+    assert!(out.success);
+    assert_eq!(&out.output, "2021-01-31\n");
+
+    let out = run_pundit_on_setup(
+        "journal",
+        &[
+            NormalArg("journal"),
+            NormalArg("--date"),
+            NormalArg("work"),
+            NormalArg("previous"),
+            RelativePath("work/20210000000000-work_2021_02_03.org"),
+        ],
+    );
+    assert!(out.success);
+    assert_eq!(&out.output, "2021-02-01\n");
+
+    let out = run_pundit_on_setup(
+        "journal",
+        &[
+            NormalArg("journal"),
+            NormalArg("--date"),
+            NormalArg("work"),
+            NormalArg("previous"),
+            RelativePath("work/20210000000000-work_2021_01_30.org"),
+        ],
+    );
+    assert!(out.success);
+    assert_eq!(&out.output, "2021-01-30\n");
+}
+
+#[test]
+fn test_next() {
+    let out = run_pundit_on_setup(
+        "journal",
+        &[
+            NormalArg("journal"),
+            NormalArg("--date"),
+            NormalArg("work"),
+            NormalArg("next"),
+            RelativePath("work/20210000000000-work_2021_02_01.org"),
+        ],
+    );
+    assert!(out.success);
+    assert_eq!(&out.output, "2021-02-03\n");
+
+    let out = run_pundit_on_setup(
+        "journal",
+        &[
+            NormalArg("journal"),
+            NormalArg("--date"),
+            NormalArg("work"),
+            NormalArg("next"),
+            RelativePath("work/20210000000000-work_2021_01_31.org"),
+        ],
+    );
+    assert!(out.success);
+    assert_eq!(&out.output, "2021-02-01\n");
+
+    let out = run_pundit_on_setup(
+        "journal",
+        &[
+            NormalArg("journal"),
+            NormalArg("--date"),
+            NormalArg("work"),
+            NormalArg("next"),
+            RelativePath("work/20210000000000-work_2021_02_03.org"),
+        ],
+    );
+    assert!(out.success);
+    assert_eq!(&out.output, "2021-02-03\n");
+}
+
+#[test]
+fn test_day_before() {
+    let out = run_pundit_on_setup(
+        "journal",
+        &[
+            NormalArg("journal"),
+            NormalArg("--date"),
+            NormalArg("work"),
+            NormalArg("day-before"),
+            RelativePath("work/20210000000000-work_2021_02_01.org"),
+        ],
+    );
+    assert!(out.success);
+    assert_eq!(&out.output, "2021-01-31\n");
+
+    let out = run_pundit_on_setup(
+        "journal",
+        &[
+            NormalArg("journal"),
+            NormalArg("--date"),
+            NormalArg("work"),
+            NormalArg("day-before"),
+            RelativePath("work/20210000000000-work_2021_02_03.org"),
+        ],
+    );
+    assert!(out.success);
+    assert_eq!(&out.output, "2021-02-02\n");
+
+    let out = run_pundit_on_setup(
+        "journal",
+        &[
+            NormalArg("journal"),
+            NormalArg("--date"),
+            NormalArg("work"),
+            NormalArg("day-before"),
+            RelativePath("work/20210000000000-work_2021_01_30.org"),
+        ],
+    );
+    assert!(out.success);
+    assert_eq!(&out.output, "2021-01-29\n");
+}
+
+#[test]
+fn test_day_after() {
+    let out = run_pundit_on_setup(
+        "journal",
+        &[
+            NormalArg("journal"),
+            NormalArg("--date"),
+            NormalArg("work"),
+            NormalArg("day-after"),
+            RelativePath("work/20210000000000-work_2021_01_31.org"),
+        ],
+    );
+    assert!(out.success);
+    assert_eq!(&out.output, "2021-02-01\n");
+
+    let out = run_pundit_on_setup(
+        "journal",
+        &[
+            NormalArg("journal"),
+            NormalArg("--date"),
+            NormalArg("work"),
+            NormalArg("day-after"),
+            RelativePath("work/20210000000000-work_2021_02_01.org"),
+        ],
+    );
+    assert!(out.success);
+    assert_eq!(&out.output, "2021-02-02\n");
+
+    let out = run_pundit_on_setup(
+        "journal",
+        &[
+            NormalArg("journal"),
+            NormalArg("--date"),
+            NormalArg("work"),
+            NormalArg("day-after"),
+            RelativePath("work/20210000000000-work_2021_02_03.org"),
+        ],
+    );
+    assert!(out.success);
+    assert_eq!(&out.output, "2021-02-04\n");
 }

@@ -1,3 +1,6 @@
+// Remove this once its stabilized
+#![feature(str_split_once)]
+
 pub mod anki;
 pub mod args;
 pub mod config;

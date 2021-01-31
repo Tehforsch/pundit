@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::Result;
-use chrono::{DateTime, Local};
+use anyhow::{anyhow, Context, Result};
+use chrono::NaiveDate;
 
 use crate::{
     config, dir_utils::create_folder, note::Note, note_utils::find_or_create_note, notes::Notes,
@@ -32,12 +32,33 @@ impl JournalInfo {
         ))
     }
 
-    pub fn get_note_title_from_date(&self, date_time: &DateTime<Local>) -> String {
+    pub fn get_note_title_from_date(&self, date: &NaiveDate) -> String {
+        assert_eq!(config::JOURNAL_TITLE_FORMAT, "{} {}");
         format!(
             "{} {}",
             self.name,
-            date_time.date().format(config::JOURNAL_DATE_FORMAT_STR)
+            date.format(config::JOURNAL_DATE_FORMAT_STR)
         )
+    }
+
+    pub fn get_date_from_note(note: &Note) -> Result<NaiveDate> {
+        JournalInfo::get_date_from_note_title(&note.title)
+    }
+
+    fn get_date_from_note_title(title: &str) -> Result<NaiveDate> {
+        assert_eq!(config::JOURNAL_TITLE_FORMAT, "{} {}"); // This needs to be changed when the format string changes.
+        let date_part_of_title = title.split_once(" ").map(|(_, s1)| s1);
+        date_part_of_title
+            .ok_or_else(|| {
+                anyhow!(format!(
+                    "Invalid format in title for journal note: {}",
+                    title
+                ))
+            })
+            .and_then(|date_str| {
+                NaiveDate::parse_from_str(date_str, config::JOURNAL_DATE_FORMAT_STR)
+                    .context(format!("Invalid date in title for journal note: {}", title))
+            })
     }
 
     pub fn get_base_note<'a>(&self, notes: &'a Notes) -> &'a Note {
