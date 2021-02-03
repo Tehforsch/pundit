@@ -11,6 +11,12 @@ pub struct NoteArg {
 
 impl NoteArg {
     pub fn find_in<'a>(&self, notes: &'a Notes) -> Option<&'a Note> {
-        notes.iter().filter(|n| n.filename == self.filename).next()
+        if !self.filename.exists() {
+            return None;
+        }
+        notes
+            .iter()
+            .filter(|n| n.filename == self.filename.canonicalize().unwrap())
+            .next()
     }
 }

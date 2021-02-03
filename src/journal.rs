@@ -66,14 +66,6 @@ fn get_date_duration(duration: Duration) -> Result<NaiveDate> {
         .context("Date overflow")
 }
 
-fn get_date_previous(
-    notes: &Notes,
-    journal: &JournalInfo,
-    note_name: &NoteArg,
-) -> Result<NaiveDate> {
-    get_date_via_selector(notes, journal, note_name, previous_date)
-}
-
 fn get_date_via_selector<'a, F>(
     notes: &'a Notes,
     journal: &JournalInfo,
@@ -108,21 +100,10 @@ fn next_date(entry_dates: &Vec<NaiveDate>, date: &NaiveDate) -> NaiveDate {
     previous_entry.unwrap_or(date).clone()
 }
 
-fn day_before_date(entry_dates: &Vec<NaiveDate>, date: &NaiveDate) -> NaiveDate {
+fn day_before_date(_entry_dates: &Vec<NaiveDate>, date: &NaiveDate) -> NaiveDate {
     date.checked_add_signed(Duration::days(-1)).unwrap()
 }
 
-fn day_after_date(entry_dates: &Vec<NaiveDate>, date: &NaiveDate) -> NaiveDate {
+fn day_after_date(_entry_dates: &Vec<NaiveDate>, date: &NaiveDate) -> NaiveDate {
     date.checked_add_signed(Duration::days(1)).unwrap()
 }
-// fn create_new_journal_note_from_title(
-//     notes: &Notes,
-//     base_folder: &Path,
-//     folder: &Path,
-//     title: &str,
-//     journal_name: &str,
-// ) -> Result<Note> {
-//     let note = create_new_note_from_title(notes, folder, title)?;
-//     append_link_to_main_journal_note(notes, base_folder, &note, folder, journal_name)?;
-//     Ok(note)
-// }
