@@ -82,30 +82,6 @@ fn new() {
 }
 
 #[test]
-fn database() {
-
-    // let env = setup_test(
-    //     get_pundit_executable(),
-    //     Path::new(TEST_SETUPS_PATH),
-    //     "3linkedNotes",
-    // );
-    // let db_path = env.dir.path().join("pundit.yaml");
-    // let abs_path = path.to_str().unwrap();
-    // let out = run_pundit_on_setup_with_note_name(
-    //     "3linkedNotes",
-    //     &["pundit.yaml", "list-backlinks"],
-    //     "20200424162358-note1.org",
-    // );
-    // let mut new_args = [abs_path, "list-backlinks", "20200424162358-note1.org"];
-    // let out = run_pundit_on_env_with_args(env, &new_args);
-    // show_output(&out);
-    // out
-    // assert!(out.success);
-    // assert!(out.output.lines().any(|line| line == "linkNote1"));
-    // assert!(out.output.lines().any(|line| line == "linkNote2"));
-}
-
-#[test]
 fn graph() {
     let out = run_pundit_on_setup(
         "graph",

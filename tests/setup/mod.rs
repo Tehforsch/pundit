@@ -149,7 +149,7 @@ fn convert_to_test_output(env: TestEnv, output: (bool, String, String)) -> Resul
     })
 }
 
-#[allow(dead_code)] // Not sure why I need this to begin with?
+#[allow(dead_code)] // I must be doing something wrong because this is definitely used
 pub fn run_pundit_on_setup_with_args(
     binary_name: String,
     setups_folder: &Path,
@@ -161,18 +161,7 @@ pub fn run_pundit_on_setup_with_args(
     convert_to_test_output(env, output)
 }
 
-pub fn run_pundit_on_diff_setup(setup_name: &str, args: &[TestArg]) -> TestOutput {
-    let out = run_pundit_diff(
-        get_pundit_executable(),
-        Path::new(TEST_SETUPS_PATH),
-        setup_name,
-        &args,
-    )
-    .unwrap();
-    show_output(&out);
-    out
-}
-
+#[allow(dead_code)] // I must be doing something wrong because this is definitely used
 pub fn run_pundit_on_setup(setup_name: &str, args: &[TestArg]) -> TestOutput {
     let out = run_pundit_on_setup_with_args(
         get_pundit_executable(),

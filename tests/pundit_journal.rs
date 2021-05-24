@@ -1,10 +1,8 @@
 pub mod setup;
 
-use anyhow::Result;
 use regex::Regex;
-use setup::TestArg;
-use setup::{run_pundit_diff, TestArg::NormalArg, TestArg::RelativePath};
-use std::{fs, path::Path};
+use setup::{TestArg::NormalArg, TestArg::RelativePath};
+use std::fs;
 
 use pundit::dir_utils::{get_files, get_folders};
 use setup::run_pundit_on_setup;
