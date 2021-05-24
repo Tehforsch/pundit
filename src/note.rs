@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 
 use anyhow::{anyhow, Context, Result};
 use chrono::{DateTime, Local};
+use log::info;
 
 #[derive(Debug, Clone)]
 struct InvalidNoteError;
@@ -90,7 +91,7 @@ impl Note {
     }
 
     pub fn show_filename(&self) {
-        println!(
+        info!(
             "{}",
             self.filename.canonicalize().unwrap().to_str().unwrap()
         );

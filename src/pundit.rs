@@ -1,3 +1,5 @@
+pub mod logger;
+
 use anyhow::{anyhow, Result};
 use pundit::notes::Notes;
 use pundit::{filter_options::FilterOptions, fzf::run_fzf};
@@ -9,13 +11,28 @@ use clap::Clap;
 use pundit::args::{Opts, SubCommand};
 use pundit::graph::get_connected_component_undirected;
 use pundit::note::{create_new_note_from_title, Note};
+use log::{info, error, LevelFilter, SetLoggerError};
+use logger::ResultLogger;
+
+static IDENTIFIER_LOGGER: ResultLogger = ResultLogger { add_identifier: true };
+static NO_IDENTIFIER_LOGGER: ResultLogger = ResultLogger { add_identifier: false };
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();
+    init_logger(args.add_identifier).unwrap();
     let note_folder = args.folder.canonicalize()?;
     let mut notes = read_notes(&note_folder, &args.database, !args.singledir)?;
     run(args, &mut notes)?;
     Ok(())
+}
+
+pub fn init_logger(add_identifier: bool) -> core::result::Result<(), SetLoggerError> {
+    let logger = match add_identifier {
+        true => &IDENTIFIER_LOGGER,
+        false => &NO_IDENTIFIER_LOGGER,
+    };
+    log::set_logger(logger)
+        .map(|()| log::set_max_level(LevelFilter::Debug))
 }
 
 fn get_notes<'a>(
@@ -39,13 +56,13 @@ fn get_notes_filtered<'a>(
 
 fn list_notes(notes: &Notes, filter: Option<FilterOptions>) {
     for note in get_notes(notes, filter) {
-        println!("{}", note.title);
+        info!("{}", note.title);
     }
 }
 
 fn list_backlinks(notes: &Notes, note: &Note) {
     for link in get_backlinks(notes, note) {
-        println!("{}", link.title);
+        info!("{}", link.title);
     }
 }
 
@@ -66,14 +83,14 @@ fn select_note_interactively(all_notes: &Notes, notes: &[&Note]) -> Result<()> {
     // For interactive use from other processes: Print the filename of the resulting file.
     match note {
         Some(n) => n.show_filename(),
-        None => println!(),
+        None => info!(""),
     };
     Ok(())
 }
 
 fn show_link(note1: &Note, note2: &Note) -> Result<()> {
     let link_text = note2.get_link_from(note1)?;
-    println!("{}", link_text);
+    info!("{}", link_text);
     Ok(())
 }
 
@@ -142,7 +159,7 @@ fn run_fzf_on_notes_string(content: &str) -> String {
 }
 
 fn delete_file(filename: &Path) {
-    println!("Deleting {}", filename.to_str().unwrap());
+    info!("Deleting {}", filename.to_str().unwrap());
 }
 
 fn delete_note(notes: &Notes, note: &Note) {
@@ -151,12 +168,12 @@ fn delete_note(notes: &Notes, note: &Note) {
     match next {
         None => delete_file(&note.filename),
         Some(note) => {
-            println!("There are links to this note: ");
-            println!("\t{}", note.title);
+            error!("There are links to this note: ");
+            error!("\t{}", note.title);
             for backlink_note in backlink_notes {
-                println!("\t{}", backlink_note.title);
+                error!("\t{}", backlink_note.title);
             }
-            println!("Not deleting note.");
+            error!("Not deleting note.");
         }
     }
 }
@@ -169,7 +186,7 @@ fn run_find_graph(notes: &Notes, note: &Note) -> Result<()> {
 fn run_list_graph(notes: &Notes, note: &Note) {
     let connected = get_connected_component_undirected(notes, note);
     for n in connected.iter() {
-        println!("{}", n.title);
+        info!("{}", n.title);
     }
 }
 

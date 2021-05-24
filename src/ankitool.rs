@@ -10,14 +10,14 @@ use std::error::Error;
 
 pub fn list_models(collection: &AnkiCollection) -> Result<()> {
     for model in collection.models.iter() {
-        println!("{}", &model.name);
+        info!("{}", &model.name);
     }
     Ok(())
 }
 
 pub fn list_decks(collection: &AnkiCollection) -> Result<()> {
     for deck in collection.decks.iter() {
-        println!("{}", &deck.name)
+        info!("{}", &deck.name)
     }
     Ok(())
 }
@@ -25,7 +25,7 @@ pub fn list_decks(collection: &AnkiCollection) -> Result<()> {
 pub fn list_fields(collection: &AnkiCollection, model_name: &str) -> Result<()> {
     let model = get_model_by_name(collection, model_name)?;
     for field in model.flds.iter() {
-        println!("{}", field.name);
+        info!("{}", field.name);
     }
     Ok(())
 }

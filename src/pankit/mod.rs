@@ -2,7 +2,7 @@ pub mod pankit_note_info;
 pub mod pankit_yaml_block;
 pub mod pankit_yaml_note;
 
-use crate::anki::{find_anki_note_in_collection, named::get_by_name};
+use crate::{anki::{find_anki_note_in_collection, named::get_by_name}, config::{ANKI_BLOCK_NOTE_TEMPLATE, ANKI_FULL_NOTE_TEMPLATE}};
 use crate::anki::get_csum;
 use crate::anki::get_unix_time;
 use crate::anki::is_note_id_field;
@@ -13,7 +13,9 @@ use crate::fzf::select_interactively;
 use crate::note::Note;
 use crate::notes::Notes;
 use crate::{anki::anki_deck::AnkiDeck, config::ANKI_NOTE_FIELD_TEMPLATE};
-use crate::{anki::anki_model::AnkiModel, config::ANKI_NOTE_TEMPLATE};
+use crate::{anki::anki_model::AnkiModel};
+
+use log::{info, error};
 use anyhow::{anyhow, Context, Result};
 use regex::Regex;
 use rusqlite::Connection;
@@ -90,7 +92,7 @@ fn read_pankit_database(pankit_db_path: &Path) -> Result<PankitDatabase> {
     match mb_data {
         Ok(data) => Ok(serde_yaml::from_str(&data).context("Reading pankit database contents")?),
         Err(_err) => {
-            println!("Pankit database file does not exist: Assuming empty database.");
+            info!("Pankit database file does not exist: Assuming empty database.");
             Ok(PankitDatabase::new())
         }
     }
@@ -158,7 +160,7 @@ fn filter_conflict_actions(actions: Vec<Action>) -> Vec<Action> {
 fn get_actions_if_no_conflict(actions: Vec<Action>) -> Result<Vec<Action>> {
     if actions.iter().any(|action| action.is_conflict()) {
         for conflict in actions.iter().filter(|action| action.is_conflict()) {
-            println!("{:?}", conflict);
+            error!("{:?}", conflict);
         }
         Err(anyhow!("There are conflicting notes!"))
     } else {
@@ -187,7 +189,7 @@ fn execute_action(
             update_database_entry(pankit_db, note);
         }
         Action::AskUserConflict(conflict) => {
-            println!(
+            error!(
                 "There is a conflict between note contents for id {}:Pundit note contents:\n{}\nAnki note contents:\n{}",
                 conflict.anki.id, conflict.anki.flds, conflict.pundit.flds
             );
@@ -343,23 +345,29 @@ pub fn pankit_get_note(
     let collection = read_collection(&connection)?;
     close_connection(connection)?;
     let id = get_new_note_id();
-    let (model, deck) = get_model_and_deck_for_new_note(&collection, model_filename)?;
-    print_anki_note(id, &model, &deck);
+    let maybe_model_and_deck = get_model_and_deck_from_note(&collection, model_filename)?;
+    if let Some((model, deck)) = maybe_model_and_deck {
+        print_anki_note(id, &model, &deck, false);
+    }
+    else {
+        let model = select_model_interactively(&collection).ok_or_else(|| anyhow!("No model selected"))?;
+        let deck = select_deck_interactively(&collection).ok_or_else(|| anyhow!("No deck selected"))?;
+        print_anki_note(id, &model, &deck, true);
+    }
     Ok(())
 }
 
-fn get_model_and_deck_for_new_note(
+fn get_model_and_deck_from_note(
     collection: &AnkiCollection,
     model_filename: Option<PathBuf>,
-) -> Result<(&AnkiModel, &AnkiDeck)> {
+) -> Result<Option<(&AnkiModel, &AnkiDeck)>> {
     let maybe_model_and_deck_name =
         model_filename.and_then(|filename| get_model_and_deck_name_from_first_anki_note(filename).transpose()).transpose()?;
-    Ok(match maybe_model_and_deck_name {
-        Some((model_name, deck_name)) => (get_by_name(&collection.models, &model_name).unwrap(), get_by_name(&collection.decks, &deck_name).unwrap()),
-        None => 
-        (select_model_interactively(&collection).ok_or_else(|| anyhow!("No model selected"))?,
-         select_deck_interactively(&collection).ok_or_else(|| anyhow!("No deck selected"))?)
-    })
+    Ok(maybe_model_and_deck_name.map(|(model_name, deck_name)| {
+        let model = get_by_name(&collection.models, &model_name).unwrap();
+        let deck = get_by_name(&collection.decks, &deck_name).unwrap();
+        (model, deck)
+    }))
 }
 
 fn get_model_and_deck_name_from_first_anki_note(filename: PathBuf) -> Result<Option<(String, String)>> {
@@ -367,10 +375,14 @@ fn get_model_and_deck_name_from_first_anki_note(filename: PathBuf) -> Result<Opt
     Ok(anki_notes.first().map(|note| (note.model_name.clone(), note.deck_name.clone())))
 }
 
-fn print_anki_note(id: i64, model: &AnkiModel, deck: &AnkiDeck) {
+fn print_anki_note(id: i64, model: &AnkiModel, deck: &AnkiDeck, full: bool) {
     // I would use a simple yaml serialization here, but the problem is that
     // I explicitly want to keep the empty strings as empty space instead of
     // "" so instead I will just explicitly construct the template here.
+    let template = match full {
+        true => ANKI_FULL_NOTE_TEMPLATE,
+        false => ANKI_BLOCK_NOTE_TEMPLATE,
+    };
     let fields_string = model
         .flds
         .iter()
@@ -384,9 +396,9 @@ fn print_anki_note(id: i64, model: &AnkiModel, deck: &AnkiDeck) {
         })
         .collect::<Vec<String>>()
         .join("\n");
-    println!(
+    info!(
         "{}",
-        ANKI_NOTE_TEMPLATE
+        template
             .clone()
             .replace("{id}", &format!("{}", id))
             .replace("{model}", &model.name)

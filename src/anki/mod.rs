@@ -14,6 +14,7 @@ use std::convert::TryFrom;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, Context, Result};
+use log::info;
 
 use crate::anki::anki_card::AnkiCard;
 use crate::anki::anki_collection::AnkiCollection;
@@ -227,7 +228,7 @@ pub fn get_sort_field_contents(
 }
 
 pub fn add_anki_note(connection: &Connection, anki_note: &AnkiNote) -> rusqlite::Result<usize> {
-    println!("Adding {}", anki_note.id);
+    info!("Adding {}", anki_note.id);
     connection.execute(
         "INSERT INTO notes (id, guid, mid, mod, usn, tags, flds, sfld, csum, flags, data) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
         params![anki_note.id, anki_note.guid, anki_note.mid, anki_note.mod_, anki_note.usn, anki_note.tags, anki_note.flds, anki_note.sfld, anki_note.csum, anki_note.flags, anki_note.data]
@@ -235,7 +236,7 @@ pub fn add_anki_note(connection: &Connection, anki_note: &AnkiNote) -> rusqlite:
 }
 
 pub fn add_anki_card(connection: &Connection, anki_card: &AnkiCard) -> rusqlite::Result<usize> {
-    println!("Adding card {}", anki_card.id);
+    info!("Adding card {}", anki_card.id);
     connection.execute(
         "INSERT INTO cards (id, nid, did, ord, mod, usn, type, queue, due, ivl, factor, reps, lapses, left, odue, odid, flags, data) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18)",
         params![anki_card.id, anki_card.nid, anki_card.did, anki_card.ord, anki_card.mod_, anki_card.usn, anki_card.type_, anki_card.queue, anki_card.due, anki_card.ivl, anki_card.factor, anki_card.reps, anki_card.lapses, anki_card.left, anki_card.odue, anki_card.odid, anki_card.flags, anki_card.data]
@@ -246,7 +247,7 @@ pub fn update_anki_note_contents(
     connection: &Connection,
     anki_note: &AnkiNote,
 ) -> rusqlite::Result<usize> {
-    println!("Updating note contents {}", anki_note.id);
+    info!("Updating note contents {}", anki_note.id);
     connection.execute(
         "UPDATE notes SET (mod, flds, sfld, csum) = (?1, ?2, ?3, ?4) WHERE id = (?5)",
         params![

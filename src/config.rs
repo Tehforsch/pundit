@@ -4,7 +4,11 @@ pub static NOTE_EXTENSION: &str = "org";
 pub static NOTE_FILENAME_STR_FORMAT: &str = "{dateString}-{titleString}.org";
 pub static NOTE_DATE_FORMAT_STR: &str = "%Y%m%d%H%M%S";
 pub static ID_MULTIPLIER: i64 = 100;
-pub static ANKI_NOTE_TEMPLATE: &str = "#+begin_src yaml
+pub static ANKI_BLOCK_NOTE_TEMPLATE: &str = "
+{id}:
+{fields}
+";
+pub static ANKI_FULL_NOTE_TEMPLATE: &str = "#+begin_src yaml
 deck: {deck}
 model: {model}
 {id}:

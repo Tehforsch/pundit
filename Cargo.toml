@@ -28,6 +28,7 @@ chrono = "0.4.19"
 generational-arena = {version = "0.2.8", features=["serde"]}
 rand = "0.7.3"
 pathdiff = "0.2.0"
+log = "0.4.14"
 
 [dev-dependencies]
 tempdir = "0.3.7"

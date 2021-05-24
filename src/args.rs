@@ -19,6 +19,10 @@ pub struct Opts {
     /// Run only on the top level folder.
     #[clap(short, long)]
     pub singledir: bool,
+    /// Add identifying lines to the beginning and the end of stdout so that output can be more easily parsed
+    /// from terminal output in emacs (via term-char-mode)
+    #[clap(short, long)]
+    pub add_identifier:bool
 }
 
 #[derive(Clap, Debug)]
