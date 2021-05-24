@@ -1,0 +1,8 @@
+#+TITLE: anki note
+#+BEGIN_SRC yaml
+1:
+    deck: "My Deck"
+    model: Spanish
+    Spanish: la palabra en Español
+    English: the word in English
+#+END_SRC
