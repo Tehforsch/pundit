@@ -2,7 +2,7 @@ pub mod pankit_note_info;
 pub mod pankit_yaml_block;
 pub mod pankit_yaml_note;
 
-use crate::anki::anki_model::AnkiModel;
+use crate::{anki::anki_model::AnkiModel, config::ANKI_NOTE_TEMPLATE};
 use crate::anki::find_anki_note_in_collection;
 use crate::anki::get_csum;
 use crate::anki::get_unix_time;
@@ -15,7 +15,7 @@ use crate::note::Note;
 use crate::notes::Notes;
 use crate::{
     anki::anki_deck::AnkiDeck,
-    config::{ANKI_NOTE_FIELD_TEMPLATE, ANKI_NOTE_HEADER_TEMPLATE},
+    config::{ANKI_NOTE_FIELD_TEMPLATE},
 };
 use anyhow::{anyhow, Context, Result};
 use regex::Regex;
@@ -345,32 +345,29 @@ pub fn pankit_get_note(database: &std::path::PathBuf) -> Result<()> {
 }
 
 fn print_anki_note(id: i64, model: &AnkiModel, deck: &AnkiDeck) {
-    print_anki_note_header(id, model, deck);
-    print_fields(model);
-}
-
-fn print_fields(model: &AnkiModel) {
-    for field_name in model
+    // I would use a simple yaml serialization here, but the problem is that
+    // I explicitly want to keep the empty strings as empty space instead of
+    // "" so instead I will just explicitly construct the template here.
+    let fields_string = model
         .flds
         .iter()
         .map(|f| &f.name)
         .filter(|n| !is_note_id_field(n))
+        .map(|field_name|
     {
-        println!(
+        format!(
             "{}",
             ANKI_NOTE_FIELD_TEMPLATE.replace("{fieldName}", &field_name)
         )
-    }
-}
-
-fn print_anki_note_header(id: i64, model: &AnkiModel, deck: &AnkiDeck) {
+    }).collect::<Vec<String>>().join("\n");
     println!(
         "{}",
-        ANKI_NOTE_HEADER_TEMPLATE
+        ANKI_NOTE_TEMPLATE
             .clone()
             .replace("{id}", &format!("{}", id))
             .replace("{model}", &model.name)
             .replace("{deck}", &deck.name)
+            .replace("{fields}", &fields_string)
     );
 }
 
