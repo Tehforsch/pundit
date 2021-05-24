@@ -47,6 +47,17 @@ fn list_fields() {
     assert!(out.output.contains("SomeField3"));
 }
 
+#[test]
+fn new_database_schema_list_decks() {
+    let out = run_ankitool_on_setup("newDatabaseSchemaListDecks", &["list-decks"]).unwrap();
+    assert!(out.output.contains("All"));
+    assert!(out.output.contains("All::SubDeck"));
+    assert!(out.output.contains("All::SubDeck::SubSubDeck"));
+    assert!(out.output.contains("All::SubDeck2"));
+    assert!(out.output.contains("SomeDeck"));
+    assert!(out.output.contains("Default"));
+}
+
 fn run_ankitool_on_setup(setup_name: &str, args: &[&str]) -> Result<TestOutput> {
     let env = setup_test(
         get_ankitool_executable(),
