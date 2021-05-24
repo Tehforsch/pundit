@@ -7,7 +7,7 @@ use setup::TestArg::{NormalArg, RelativePath};
 use setup::{run_pundit_on_setup, TestEnv};
 
 #[test]
-fn test_read_notes() {
+fn read_notes() {
     let out = run_pundit_on_setup("3linkedNotes", &[NormalArg("list")]);
     assert!(out.success);
     assert!(out.output.lines().any(|line| line == "note1"));
@@ -16,7 +16,7 @@ fn test_read_notes() {
 }
 
 #[test]
-fn test_backlinks() {
+fn backlinks() {
     let out = run_pundit_on_setup(
         "database",
         &[
@@ -30,7 +30,7 @@ fn test_backlinks() {
 }
 
 #[test]
-fn test_link() {
+fn link() {
     let out = run_pundit_on_setup(
         "3linkedNotes",
         &[
@@ -72,7 +72,7 @@ fn test_link() {
 }
 
 #[test]
-fn test_new() {
+fn new() {
     let out = run_pundit_on_setup("newNote", &[NormalArg("new"), NormalArg("newTitle")]);
     let filename = Path::new(out.output.lines().next().unwrap());
     assert!(filename.exists());
@@ -82,7 +82,7 @@ fn test_new() {
 }
 
 #[test]
-fn test_database() {
+fn database() {
 
     // let env = setup_test(
     //     get_pundit_executable(),
@@ -106,7 +106,7 @@ fn test_database() {
 }
 
 #[test]
-fn test_graph() {
+fn graph() {
     let out = run_pundit_on_setup(
         "graph",
         &[NormalArg("list-graph"), RelativePath("linkNote1.org")],
@@ -132,7 +132,7 @@ fn test_graph() {
 }
 
 #[test]
-fn test_multi_dir_setup() {
+fn multi_dir_setup() {
     let out = run_pundit_on_setup(
         "multiDirSetup",
         &[
@@ -146,7 +146,7 @@ fn test_multi_dir_setup() {
 }
 
 #[test]
-fn test_filter_subdir() {
+fn filter_subdir() {
     let out = run_pundit_on_setup(
         "multiDirSetup",
         &[

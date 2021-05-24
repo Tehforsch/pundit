@@ -17,13 +17,13 @@ pub static DEFAULT_ANKI_TARGET_COLLECTION_NAME: &str = "target.anki2";
 pub static DEFAULT_PANKIT_FILE_NAME: &str = "pankit.yaml";
 
 #[test]
-fn test_add_existing_note_again() {
+fn add_existing_note_again() {
     let out = run_pankit_on_setup("addExistingNoteAgain", &[]).unwrap();
     assert!(out.success);
 }
 
 #[test]
-fn test_add_note_to_empty_collection() {
+fn add_note_to_empty_collection() {
     assert!(
         run_pankit_on_setup("addNoteToEmptyCollection", &[])
             .unwrap()
@@ -32,7 +32,7 @@ fn test_add_note_to_empty_collection() {
 }
 
 #[test]
-fn test_colons_in_deck_name() {
+fn colons_in_deck_name() {
     assert!(
         run_pankit_on_setup("colonsInDeckName", &[])
             .unwrap()
@@ -41,7 +41,7 @@ fn test_colons_in_deck_name() {
 }
 
 #[test]
-fn test_spaces_in_deck_name() {
+fn spaces_in_deck_name() {
     assert!(
         run_pankit_on_setup("spacesInDeckName", &[])
             .unwrap()
@@ -50,20 +50,20 @@ fn test_spaces_in_deck_name() {
 }
 
 #[test]
-fn test_conflicting_note_contents_no_database() {
+fn conflicting_note_contents_no_database() {
     let out = run_pankit_on_setup("conflictingNoteContentsNoDatabase", &[]).unwrap();
     assert!(!out.success); // The program should exit with an error because there is a conflict
 }
 
 #[test]
-fn test_conflicting_note_contents_no_database_ignore() {
+fn conflicting_note_contents_no_database_ignore() {
     let out =
         run_pankit_on_setup("conflictingNoteContentsNoDatabase", &[NormalArg("ignore")]).unwrap();
     assert!(out.success); // The program should simply ignore the conflict
 }
 
 #[test]
-fn test_conflicting_note_contents_no_database_pundit() {
+fn conflicting_note_contents_no_database_pundit() {
     let out = run_pankit_on_setup(
         "conflictingNoteContentsNoDatabaseForcePundit",
         &[NormalArg("pundit")],
@@ -73,7 +73,7 @@ fn test_conflicting_note_contents_no_database_pundit() {
 }
 
 #[test]
-fn test_add_note_default_deck_model() {
+fn add_note_default_deck_model() {
     assert!(
         run_pankit_on_setup("addNoteDefaultDeckModel", &[])
             .unwrap()
@@ -82,7 +82,7 @@ fn test_add_note_default_deck_model() {
 }
 
 #[test]
-fn test_add_note_with_model_with_note_id_as_sort_field() {
+fn add_note_with_model_with_note_id_as_sort_field() {
     assert!(
         run_pankit_on_setup("addNoteWithModelWithNoteIdAsSortField", &[])
             .unwrap()
@@ -91,7 +91,7 @@ fn test_add_note_with_model_with_note_id_as_sort_field() {
 }
 
 #[test]
-fn test_integer_in_sort_field() {
+fn integer_in_sort_field() {
     assert!(
         run_pankit_on_setup("integerInSortField", &[])
             .unwrap()

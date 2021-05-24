@@ -17,7 +17,7 @@ pub static DEFAULT_ANKI_TARGET_COLLECTION_NAME: &str = "target.anki2";
 pub static DEFAULT_PANKIT_FILE_NAME: &str = "pankit.yaml";
 
 #[test]
-fn test_list_models() {
+fn list_models() {
     let out = run_ankitool_on_setup("listModels", &["list-models"]).unwrap();
     assert!(out.output.contains("SomeModel"));
     assert!(out.output.contains("SomeModel2"));
@@ -27,7 +27,7 @@ fn test_list_models() {
 }
 
 #[test]
-fn test_list_decks() {
+fn list_decks() {
     let out = run_ankitool_on_setup("listDecks", &["list-decks"]).unwrap();
     assert!(out.output.contains("All"));
     assert!(out.output.contains("All::SubDeck"));
@@ -38,7 +38,7 @@ fn test_list_decks() {
 }
 
 #[test]
-fn test_list_fields() {
+fn list_fields() {
     let out = run_ankitool_on_setup("listFields", &["list-fields", "SomeModel"]).unwrap();
     assert!(out.output.contains("Front"));
     assert!(out.output.contains("Back"));

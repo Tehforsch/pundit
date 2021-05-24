@@ -10,7 +10,7 @@ use pundit::dir_utils::{get_files, get_folders};
 use setup::run_pundit_on_setup;
 
 #[test]
-fn test_yesterday() {
+fn yesterday() {
     let out = run_pundit_on_setup(
         "journalCreateDirIfNonExistent",
         &[
@@ -39,7 +39,7 @@ fn test_yesterday() {
 }
 
 #[test]
-fn test_previous() {
+fn previous() {
     let out = run_pundit_on_setup(
         "journal",
         &[
@@ -81,7 +81,7 @@ fn test_previous() {
 }
 
 #[test]
-fn test_next() {
+fn next() {
     let out = run_pundit_on_setup(
         "journal",
         &[
@@ -123,7 +123,7 @@ fn test_next() {
 }
 
 #[test]
-fn test_day_before() {
+fn day_before() {
     let out = run_pundit_on_setup(
         "journal",
         &[
@@ -165,7 +165,7 @@ fn test_day_before() {
 }
 
 #[test]
-fn test_day_after() {
+fn day_after() {
     let out = run_pundit_on_setup(
         "journal",
         &[
