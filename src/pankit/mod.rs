@@ -318,11 +318,12 @@ fn get_anki_info_for_pundit_note(pundit_note: &Note) -> Result<Vec<AnkiNoteInfo>
     let mut result = vec![];
     for capture in re.captures_iter(&content) {
         let data = capture.get(1).unwrap().as_str();
-        let block: PankitYamlBlock = serde_yaml::from_str(&data).context(format!(
-            "Reading anki note information from {:?}",
-            pundit_note
-        ))?;
-        result.extend(block.into_notes()?);
+        let block_result: Result<PankitYamlBlock> = serde_yaml::from_str(&data).context(format!(
+            "Reading anki note information from note {:?}. Contents: {}",
+            pundit_note.filename,
+            data
+        ));
+        result.extend(block_result?.into_notes()?);
     }
     Ok(result)
 }
