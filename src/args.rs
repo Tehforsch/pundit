@@ -152,6 +152,9 @@ impl FromStr for ConflictHandling {
 pub struct PankitGetNote {
     /// The path of the anki database to get available model and fields from.
     pub database: PathBuf,
+    /// Path to a pundit note. If this note contains anki notes, the model and deck from the first note will be used.
+    /// If the note does not contain a pankit block, pundit will ask for the model and deck interactively.
+    pub model_filename: Option<PathBuf>
 }
 
 #[derive(Clap, Debug)]

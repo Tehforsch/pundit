@@ -233,7 +233,7 @@ fn run(args: Opts, mut notes: &mut Notes) -> Result<()> {
         SubCommand::Pankit(l) => {
             pundit::pankit::update_anki(&l.database, &l.pankit_db, &notes, l.conflict_handling)?
         }
-        SubCommand::PankitGetNote(l) => pundit::pankit::pankit_get_note(&l.database)?,
+        SubCommand::PankitGetNote(l) => pundit::pankit::pankit_get_note(&l.database, l.model_filename)?,
         SubCommand::Journal(l) => {
             pundit::journal::run_journal(&mut notes, &l)?;
         }

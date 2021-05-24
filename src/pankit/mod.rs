@@ -2,8 +2,7 @@ pub mod pankit_note_info;
 pub mod pankit_yaml_block;
 pub mod pankit_yaml_note;
 
-use crate::{anki::anki_model::AnkiModel, config::ANKI_NOTE_TEMPLATE};
-use crate::anki::find_anki_note_in_collection;
+use crate::anki::{find_anki_note_in_collection, named::get_by_name};
 use crate::anki::get_csum;
 use crate::anki::get_unix_time;
 use crate::anki::is_note_id_field;
@@ -13,15 +12,13 @@ use crate::config::ID_MULTIPLIER;
 use crate::fzf::select_interactively;
 use crate::note::Note;
 use crate::notes::Notes;
-use crate::{
-    anki::anki_deck::AnkiDeck,
-    config::{ANKI_NOTE_FIELD_TEMPLATE},
-};
+use crate::{anki::anki_deck::AnkiDeck, config::ANKI_NOTE_FIELD_TEMPLATE};
+use crate::{anki::anki_model::AnkiModel, config::ANKI_NOTE_TEMPLATE};
 use anyhow::{anyhow, Context, Result};
 use regex::Regex;
 use rusqlite::Connection;
-use std::fs;
 use std::path::Path;
+use std::{fs, path::PathBuf};
 
 use std::cmp::Ordering::{Equal, Greater, Less};
 
@@ -311,16 +308,22 @@ fn get_anki_notes_and_cards_for_pundit_note(
 }
 
 fn get_anki_info_for_pundit_note(pundit_note: &Note) -> Result<Vec<AnkiNoteInfo>> {
-    let content = pundit_note
+    let contents = pundit_note
         .get_contents()
         .context("While reading file contents")?;
+    get_anki_info_from_note_contents(contents).context(format!(
+        "Reading anki notes from file {:?}",
+        pundit_note.filename
+    ))
+}
+
+fn get_anki_info_from_note_contents(contents: String) -> Result<Vec<AnkiNoteInfo>> {
     let re = get_anki_block_regex();
     let mut result = vec![];
-    for capture in re.captures_iter(&content) {
+    for capture in re.captures_iter(&contents) {
         let data = capture.get(1).unwrap().as_str();
         let block_result: Result<PankitYamlBlock> = serde_yaml::from_str(&data).context(format!(
-            "Reading anki note information from note {:?}. Contents: {}",
-            pundit_note.filename,
+            "Reading note contents: {}",
             data
         ));
         result.extend(block_result?.into_notes()?);
@@ -332,16 +335,36 @@ fn get_anki_block_regex() -> Regex {
     Regex::new(r"\#\+(?mis)begin_src *yaml *\n(.*)(?i)\#\+end_src").unwrap()
 }
 
-pub fn pankit_get_note(database: &std::path::PathBuf) -> Result<()> {
+pub fn pankit_get_note(
+    database: &std::path::PathBuf,
+    model_filename: Option<PathBuf>,
+) -> Result<()> {
     let connection = Connection::open(database).unwrap();
     let collection = read_collection(&connection)?;
     close_connection(connection)?;
     let id = get_new_note_id();
-    let model =
-        select_model_interactively(&collection).ok_or_else(|| anyhow!("No model selected"))?;
-    let deck = select_deck_interactively(&collection).ok_or_else(|| anyhow!("No deck selected"))?;
-    print_anki_note(id, model, deck);
+    let (model, deck) = get_model_and_deck_for_new_note(&collection, model_filename)?;
+    print_anki_note(id, &model, &deck);
     Ok(())
+}
+
+fn get_model_and_deck_for_new_note(
+    collection: &AnkiCollection,
+    model_filename: Option<PathBuf>,
+) -> Result<(&AnkiModel, &AnkiDeck)> {
+    let maybe_model_and_deck_name =
+        model_filename.and_then(|filename| get_model_and_deck_name_from_first_anki_note(filename).transpose()).transpose()?;
+    Ok(match maybe_model_and_deck_name {
+        Some((model_name, deck_name)) => (get_by_name(&collection.models, &model_name).unwrap(), get_by_name(&collection.decks, &deck_name).unwrap()),
+        None => 
+        (select_model_interactively(&collection).ok_or_else(|| anyhow!("No model selected"))?,
+         select_deck_interactively(&collection).ok_or_else(|| anyhow!("No deck selected"))?)
+    })
+}
+
+fn get_model_and_deck_name_from_first_anki_note(filename: PathBuf) -> Result<Option<(String, String)>> {
+    let anki_notes = get_anki_info_from_note_contents(fs::read_to_string(&filename)?)?;
+    Ok(anki_notes.first().map(|note| (note.model_name.clone(), note.deck_name.clone())))
 }
 
 fn print_anki_note(id: i64, model: &AnkiModel, deck: &AnkiDeck) {
@@ -353,13 +376,14 @@ fn print_anki_note(id: i64, model: &AnkiModel, deck: &AnkiDeck) {
         .iter()
         .map(|f| &f.name)
         .filter(|n| !is_note_id_field(n))
-        .map(|field_name|
-    {
-        format!(
-            "{}",
-            ANKI_NOTE_FIELD_TEMPLATE.replace("{fieldName}", &field_name)
-        )
-    }).collect::<Vec<String>>().join("\n");
+        .map(|field_name| {
+            format!(
+                "{}",
+                ANKI_NOTE_FIELD_TEMPLATE.replace("{fieldName}", &field_name)
+            )
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
     println!(
         "{}",
         ANKI_NOTE_TEMPLATE
