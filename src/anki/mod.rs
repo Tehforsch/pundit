@@ -31,6 +31,12 @@ pub struct AnkiNoteInfo {
     pub deck_name: String,
 }
 
+pub struct AnkiBlock {
+    pub model_name: Option<String>,
+    pub deck_name: Option<String>,
+    pub notes: Vec<AnkiNoteInfo>,
+}
+
 pub fn find_anki_note_in_collection<'a>(
     anki_notes: &'a [AnkiNote],
     note: &'a AnkiNote,

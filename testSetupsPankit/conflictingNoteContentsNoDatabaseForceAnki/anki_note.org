@@ -1,4 +1,8 @@
 #+TITLE: anki note
-#anki 1 Spanish Spanish
-#Spanish la palabra en Español CHANGE
-#English the word in English CHANGE
+#+BEGIN_SRC yaml
+1:
+    deck: Spanish
+    model: Spanish
+    Spanish: la palabra en Español CHANGE
+    English: the word in English CHANGE
+#+END_SRC

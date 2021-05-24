@@ -1,6 +1,8 @@
 #+TITLE: anki note
-#+ANKI_DECK: Spanish
-#+ANKI_MODEL: Spanish
-#anki 1
-#Spanish la palabra en Español
-#English the word in English
+#+BEGIN_SRC yaml
+deck: Spanish
+model: Spanish
+1:
+    Spanish: la palabra en Español
+    English: the word in English
+#+END_SRC

@@ -1,6 +1,8 @@
 pub mod pankit_note_info;
+pub mod pankit_yaml_block;
+pub mod pankit_yaml_note;
 
-use crate::anki::anki_deck::AnkiDeck;
+use crate::{anki::anki_deck::AnkiDeck, config::{ANKI_NOTE_FIELD_TEMPLATE, ANKI_NOTE_HEADER_TEMPLATE}};
 use crate::anki::anki_model::AnkiModel;
 use crate::anki::find_anki_note_in_collection;
 use crate::anki::get_csum;
@@ -8,29 +10,21 @@ use crate::anki::get_unix_time;
 use crate::anki::is_note_id_field;
 use crate::anki::update_anki_note_contents;
 use crate::args::ConflictHandling;
-use crate::config::ANKI_NOTE_FIELD_TEMPLATE;
-use crate::config::ANKI_NOTE_HEADER_TEMPLATE;
-use crate::config::DEFAULT_DECK_STRING;
-use crate::config::DEFAULT_MODEL_STRING;
 use crate::config::ID_MULTIPLIER;
 use crate::fzf::select_interactively;
 use crate::note::Note;
 use crate::notes::Notes;
 use anyhow::{anyhow, Context, Result};
-use regex::Captures;
-use regex::Match;
 use regex::Regex;
 use rusqlite::Connection;
-use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
-use std::str::FromStr;
 
 use std::cmp::Ordering::{Equal, Greater, Less};
 
 use rand::Rng;
 
-use self::pankit_note_info::PankitDatabase;
+use self::{pankit_note_info::PankitDatabase, pankit_yaml_block::PankitYamlBlock};
 use self::pankit_note_info::PankitNoteInfo;
 use crate::anki::anki_card::AnkiCard;
 use crate::anki::anki_collection::AnkiCollection;
@@ -293,11 +287,6 @@ pub fn get_anki_notes_and_cards_for_pundit_notes(
         )?)
     }
     Ok(results)
-    // let res: Vec<Vec<(AnkiNote, Vec<AnkiCard>)>> = notes
-    //     .iter()
-    //     .map(|pundit_note| get_anki_notes_and_cards_for_pundit_note(collection, pundit_note))
-    //     .flatten()
-    //     .collect();
 }
 
 fn get_anki_notes_and_cards_for_pundit_note(
@@ -322,104 +311,18 @@ fn get_anki_info_for_pundit_note(pundit_note: &Note) -> Result<Vec<AnkiNoteInfo>
     let content = pundit_note
         .get_contents()
         .context("While reading file contents")?;
-    let default_model = get_default_model(&content);
-    let default_deck = get_default_deck(&content);
-    let re = get_anki_card_begin_regex();
-    let lines = content.lines();
-    let mut currently_at_anki_entry = false;
-    let mut note_info: Option<AnkiNoteInfo> = None;
-    let mut res = vec![];
-    for line in lines {
-        if currently_at_anki_entry {
-            match scan_for_anki_fields(&line) {
-                None => {
-                    currently_at_anki_entry = false;
-                    res.push(note_info.unwrap());
-                    note_info = None;
-                }
-                Some((key, value)) => {
-                    note_info.as_mut().unwrap().fields.insert(key, value);
-                }
-            }
-        } else {
-            let x = line;
-            match re.captures(&x) {
-                None => {}
-                Some(capture) => {
-                    note_info = Some(get_anki_card_header(
-                        &capture,
-                        default_model.as_deref(),
-                        default_deck.as_deref(),
-                    )?);
-                    currently_at_anki_entry = true;
-                }
-            }
-        }
+    let re = get_anki_block_regex();
+    let mut result = vec![];
+    for capture in re.captures_iter(&content) {
+        let data = capture.get(1).unwrap().as_str();
+        let block: PankitYamlBlock = serde_yaml::from_str(&data).context(format!("Reading anki note information from {:?}", pundit_note))?;
+        result.extend(block.into_notes()?);
     }
-    if let Some(info) = note_info {
-        // In case that the last anki entry ended with the last line
-        res.push(info);
-    }
-    Ok(res)
+    Ok(result)
 }
 
-fn get_anki_card_header(
-    capture: &Captures,
-    default_model: Option<&str>,
-    default_deck: Option<&str>,
-) -> Result<AnkiNoteInfo> {
-    Ok(AnkiNoteInfo {
-        fields: HashMap::new(),
-        id: i64::from_str(&capture[1]).context("While reading note id as integer")?,
-        model_name: get_header_match_or_default(capture.get(2), default_model).ok_or(anyhow!(
-            "No model name provided in card header but no default model given either"
-        ))?,
-        deck_name: get_header_match_or_default(capture.get(3), default_deck).ok_or(anyhow!(
-            "No deck name provided in card header but no default deck given either"
-        ))?,
-    })
-}
-
-fn get_header_match_or_default(
-    header_match: Option<Match>,
-    default: Option<&str>,
-) -> Option<String> {
-    header_match
-        .map(|c| c.as_str())
-        .filter(|c| c != &"")
-        .or(default)
-        .map(|c| c.to_owned())
-}
-
-fn get_anki_card_begin_regex() -> Regex {
-    Regex::new(r"#anki (\d+) *([a-zA-Z]*) *([a-zA-Z:]*)").unwrap()
-}
-
-fn get_note_attribute(contents: &str, attribute_name: &str) -> Option<String> {
-    for line in contents.lines() {
-        if let Some(s) = line.strip_prefix(attribute_name) {
-            return Some(s.to_owned());
-        };
-    }
-    None
-}
-
-fn get_default_model(pundit_note_contents: &str) -> Option<String> {
-    get_note_attribute(pundit_note_contents, DEFAULT_MODEL_STRING)
-}
-
-fn get_default_deck(pundit_note_contents: &str) -> Option<String> {
-    get_note_attribute(pundit_note_contents, DEFAULT_DECK_STRING)
-}
-
-fn scan_for_anki_fields(line: &str) -> Option<(String, String)> {
-    let re = Regex::new(r"#([a-zA-Z]+) ?(.*)").unwrap();
-    re.captures(line).map(|cap| {
-        (
-            cap[1].to_string(),
-            cap[2].trim_end().trim_start().to_string(),
-        )
-    })
+fn get_anki_block_regex() -> Regex {
+    Regex::new(r"\#\+(?mis)begin_src *yaml *\n(.*)(?i)\#\+end_src").unwrap()
 }
 
 pub fn pankit_get_note(database: &std::path::PathBuf) -> Result<()> {
