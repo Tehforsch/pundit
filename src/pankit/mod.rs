@@ -2,7 +2,6 @@ pub mod pankit_note_info;
 pub mod pankit_yaml_block;
 pub mod pankit_yaml_note;
 
-use crate::{anki::anki_deck::AnkiDeck, config::{ANKI_NOTE_FIELD_TEMPLATE, ANKI_NOTE_HEADER_TEMPLATE}};
 use crate::anki::anki_model::AnkiModel;
 use crate::anki::find_anki_note_in_collection;
 use crate::anki::get_csum;
@@ -14,6 +13,10 @@ use crate::config::ID_MULTIPLIER;
 use crate::fzf::select_interactively;
 use crate::note::Note;
 use crate::notes::Notes;
+use crate::{
+    anki::anki_deck::AnkiDeck,
+    config::{ANKI_NOTE_FIELD_TEMPLATE, ANKI_NOTE_HEADER_TEMPLATE},
+};
 use anyhow::{anyhow, Context, Result};
 use regex::Regex;
 use rusqlite::Connection;
@@ -24,8 +27,8 @@ use std::cmp::Ordering::{Equal, Greater, Less};
 
 use rand::Rng;
 
-use self::{pankit_note_info::PankitDatabase, pankit_yaml_block::PankitYamlBlock};
 use self::pankit_note_info::PankitNoteInfo;
+use self::{pankit_note_info::PankitDatabase, pankit_yaml_block::PankitYamlBlock};
 use crate::anki::anki_card::AnkiCard;
 use crate::anki::anki_collection::AnkiCollection;
 use crate::anki::anki_note::AnkiNote;
@@ -315,7 +318,10 @@ fn get_anki_info_for_pundit_note(pundit_note: &Note) -> Result<Vec<AnkiNoteInfo>
     let mut result = vec![];
     for capture in re.captures_iter(&content) {
         let data = capture.get(1).unwrap().as_str();
-        let block: PankitYamlBlock = serde_yaml::from_str(&data).context(format!("Reading anki note information from {:?}", pundit_note))?;
+        let block: PankitYamlBlock = serde_yaml::from_str(&data).context(format!(
+            "Reading anki note information from {:?}",
+            pundit_note
+        ))?;
         result.extend(block.into_notes()?);
     }
     Ok(result)
