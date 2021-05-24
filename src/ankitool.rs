@@ -7,6 +7,7 @@ use anyhow::Result;
 use clap::Clap;
 use rusqlite::Connection;
 use std::error::Error;
+use log::info;
 
 pub fn list_models(collection: &AnkiCollection) -> Result<()> {
     for model in collection.models.iter() {

@@ -92,7 +92,7 @@ fn read_pankit_database(pankit_db_path: &Path) -> Result<PankitDatabase> {
     match mb_data {
         Ok(data) => Ok(serde_yaml::from_str(&data).context("Reading pankit database contents")?),
         Err(_err) => {
-            info!("Pankit database file does not exist: Assuming empty database.");
+            error!("Pankit database file does not exist: Assuming empty database.");
             Ok(PankitDatabase::new())
         }
     }
@@ -396,7 +396,7 @@ fn print_anki_note(id: i64, model: &AnkiModel, deck: &AnkiDeck, full: bool) {
         })
         .collect::<Vec<String>>()
         .join("\n");
-    info!(
+    let result = format!(
         "{}",
         template
             .clone()
@@ -405,6 +405,9 @@ fn print_anki_note(id: i64, model: &AnkiModel, deck: &AnkiDeck, full: bool) {
             .replace("{deck}", &deck.name)
             .replace("{fields}", &fields_string)
     );
+    for line in result.lines() {
+        info!("{}", line);
+    }
 }
 
 fn get_new_note_id() -> i64 {

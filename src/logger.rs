@@ -12,7 +12,7 @@ impl log::Log for ResultLogger {
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
             match self.add_identifier {
-                true => println!("OUTPUT{}", record.args()),
+                true => println!("\nOUTPUT{}", record.args()),
                 false => println!("{}", record.args()),
             }
         }
