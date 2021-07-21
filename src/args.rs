@@ -1,7 +1,7 @@
 use clap::Clap;
 use std::{path::PathBuf, str::FromStr};
 
-use crate::{filter_options::FilterOptions, journal_opts::JournalOpts};
+use crate::{filter_options::FilterOptions, journal_opts::JournalOpts, paper_opts::PaperOpts};
 
 /// Manage notes and links between them.
 #[derive(Clap)]
@@ -41,6 +41,7 @@ pub enum SubCommand {
     ListGraph(ListGraph),
     Graph(FindGraph),
     Journal(JournalOpts),
+    Paper(PaperOpts),
 }
 
 /// List notes.

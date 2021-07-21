@@ -14,3 +14,6 @@ pub mod note_arg;
 pub mod note_utils;
 pub mod notes;
 pub mod pankit;
+pub mod paper;
+pub mod paper_opts;
+pub mod named;

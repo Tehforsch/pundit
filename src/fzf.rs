@@ -1,5 +1,5 @@
-use crate::anki::named::get_by_name;
-use crate::anki::named::Named;
+use crate::named::get_by_name;
+use crate::named::Named;
 use std::io::Write;
 use std::process::{Command, Stdio};
 use std::str;

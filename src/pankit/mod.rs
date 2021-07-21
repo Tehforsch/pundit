@@ -2,7 +2,7 @@ pub mod pankit_note_info;
 pub mod pankit_yaml_block;
 pub mod pankit_yaml_note;
 
-use crate::{anki::{find_anki_note_in_collection, named::get_by_name}, config::{ANKI_BLOCK_NOTE_TEMPLATE, ANKI_FULL_NOTE_TEMPLATE}};
+use crate::{anki::{find_anki_note_in_collection}, config::{ANKI_BLOCK_NOTE_TEMPLATE, ANKI_FULL_NOTE_TEMPLATE}, named::get_by_name};
 use crate::anki::get_csum;
 use crate::anki::get_unix_time;
 use crate::anki::is_note_id_field;

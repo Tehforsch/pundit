@@ -14,7 +14,6 @@ impl log::Log for ResultLogger {
     }
 
     fn log(&self, record: &Record) {
-        dbg!("ja hey");
         if self.enabled(record.metadata()) {
             match self.add_identifier {
                 true => println!("\nOUTPUT{}", record.args()),

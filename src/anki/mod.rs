@@ -4,7 +4,6 @@ pub mod anki_collection;
 pub mod anki_deck;
 pub mod anki_model;
 pub mod anki_note;
-pub mod named;
 
 use crypto::digest::Digest;
 use crypto::sha1::Sha1;
@@ -16,13 +15,13 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use anyhow::{anyhow, Context, Result};
 use log::info;
 
-use crate::anki::anki_card::AnkiCard;
-use crate::anki::anki_collection::AnkiCollection;
-use crate::anki::anki_deck::{get_anki_decks_from_json, AnkiDeck};
-use crate::anki::anki_model::{get_anki_models_from_json, AnkiModel};
-use crate::anki::anki_note::AnkiNote;
+use crate::named::get_by_name;
 
-use self::named::get_by_name;
+use self::anki_card::AnkiCard;
+use self::anki_collection::AnkiCollection;
+use self::anki_deck::{get_anki_decks_from_json, AnkiDeck};
+use self::anki_model::{get_anki_models_from_json, AnkiModel};
+use self::anki_note::AnkiNote;
 
 #[derive(Debug)]
 pub struct AnkiNoteInfo {

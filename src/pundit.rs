@@ -242,6 +242,9 @@ fn run(args: Opts, mut notes: &mut Notes) -> Result<()> {
         SubCommand::Journal(l) => {
             pundit::journal::run_journal(&mut notes, &l)?;
         }
+        SubCommand::Paper(l) => {
+            pundit::paper::run_paper(&mut notes, &l)?;
+        }
     }
     Ok(())
 }

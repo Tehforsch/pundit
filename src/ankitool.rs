@@ -1,5 +1,6 @@
 pub mod anki;
 pub mod logger;
+pub mod named;
 
 use crate::anki::anki_args::{AnkiOpts, AnkiSubCommand};
 use crate::anki::anki_collection::AnkiCollection;

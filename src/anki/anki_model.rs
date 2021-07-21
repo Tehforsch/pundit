@@ -1,3 +1,4 @@
+use crate::named::Named;
 use serde_derive::Deserialize;
 use serde_json::{Result, Value};
 
@@ -79,4 +80,11 @@ pub fn get_anki_models_from_json(json_data: String) -> Result<Vec<AnkiModel>> {
 
 pub fn get_anki_model(model_value: &Value) -> Result<AnkiModel> {
     serde_json::from_value::<AnkiModel>(model_value.clone())
+}
+
+
+impl Named for AnkiModel {
+    fn get_name(&self) -> &str {
+        &self.name
+    }
 }
