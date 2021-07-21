@@ -38,8 +38,8 @@ fn get_citekeys_from_file(file: &Path) -> Result<Vec<String>> {
 }
 
 fn get_citekeys_from_contents(contents: &str) -> Vec<String> {
-    let re = Regex::new(r"@article\{(\w*),").unwrap();
-    re.captures_iter(contents).map(|capture| capture.get(1).unwrap().as_str().to_owned()).collect()
+    let re = Regex::new(r"@(article|inproceedings|book|inbook|proceedings|phdthesis)\{(\w*),").unwrap();
+    re.captures_iter(contents).map(|capture| capture.get(2).unwrap().as_str().to_owned()).collect()
 }
 
 fn find_note_for_cite_key<'a>(notes: &'a mut Notes, citekey: &str) -> Result<&'a Note> {
