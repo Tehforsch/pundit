@@ -1,10 +1,12 @@
 pub mod anki;
+pub mod logger;
 
 use crate::anki::anki_args::{AnkiOpts, AnkiSubCommand};
 use crate::anki::anki_collection::AnkiCollection;
 use crate::anki::{close_connection, get_model_by_name, read_collection};
 use anyhow::Result;
 use clap::Clap;
+use logger::init_logger;
 use rusqlite::Connection;
 use std::error::Error;
 use log::info;
@@ -33,6 +35,7 @@ pub fn list_fields(collection: &AnkiCollection, model_name: &str) -> Result<()> 
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();
+    init_logger(false).unwrap();
     let connection = Connection::open(&args.database_path).unwrap();
     let collection = read_collection(&connection)?;
     run(&connection, &collection, args)?;

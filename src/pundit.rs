@@ -1,6 +1,7 @@
 pub mod logger;
 
 use anyhow::{anyhow, Result};
+use logger::init_logger;
 use pundit::notes::Notes;
 use pundit::{filter_options::FilterOptions, fzf::run_fzf};
 use pundit::{note_utils::get_backlinks, notes::read_notes};
@@ -11,11 +12,7 @@ use clap::Clap;
 use pundit::args::{Opts, SubCommand};
 use pundit::graph::get_connected_component_undirected;
 use pundit::note::{create_new_note_from_title, Note};
-use log::{info, error, LevelFilter, SetLoggerError};
-use logger::ResultLogger;
-
-static IDENTIFIER_LOGGER: ResultLogger = ResultLogger { add_identifier: true };
-static NO_IDENTIFIER_LOGGER: ResultLogger = ResultLogger { add_identifier: false };
+use log::{info, error};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();
@@ -24,15 +21,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut notes = read_notes(&note_folder, &args.database, !args.singledir)?;
     run(args, &mut notes)?;
     Ok(())
-}
-
-pub fn init_logger(add_identifier: bool) -> core::result::Result<(), SetLoggerError> {
-    let logger = match add_identifier {
-        true => &IDENTIFIER_LOGGER,
-        false => &NO_IDENTIFIER_LOGGER,
-    };
-    log::set_logger(logger)
-        .map(|()| log::set_max_level(LevelFilter::Debug))
 }
 
 fn get_notes<'a>(
