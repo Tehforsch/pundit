@@ -1,8 +1,8 @@
-use std::{fs, path::Path};
+use std::{fs, path::{Path, PathBuf}};
 
-use anyhow::{Context, Result};
-use log::info;
-use crate::{fzf::select_interactively, named::Named, note::{Note, create_new_note_from_title}, notes::Notes, paper_opts::{PaperOpts, PaperSubCommand}};
+use anyhow::{Context, Result, anyhow};
+use log::{info};
+use crate::{config, fzf::select_interactively, named::Named, note::Note, note_utils::find_or_create_note_with_special_content, notes::Notes, paper_opts::{PaperOpts, PaperSubCommand}};
 use regex::Regex;
 
 pub fn run_paper(notes: &mut Notes, args: &PaperOpts) -> Result<()> {
@@ -42,12 +42,32 @@ fn get_citekeys_from_contents(contents: &str) -> Vec<String> {
     re.captures_iter(contents).map(|capture| capture.get(1).unwrap().as_str().to_owned()).collect()
 }
 
-fn find_note_for_cite_key(notes: &Notes, citekey: &str) -> Result<Note> {
-    let note_with_citekey_as_title = notes.find_by_title(citekey);
-    match note_with_citekey_as_title {
-        Some(note) => Ok(note.clone()),
-        None => create_new_note_from_title(notes, &notes.folder, citekey),
+fn find_note_for_cite_key<'a>(notes: &'a mut Notes, citekey: &str) -> Result<&'a Note> {
+    create_new_paper_note_from_title(notes, citekey)
+}
+
+fn get_paper_base_note(notes: &Notes) -> Result<&Note> {
+    notes.find_by_title(config::PAPER_NOTE_TITLE).ok_or_else(|| anyhow!("No note with title '{}' found in notes. Create one so that the new paper note can link to it.", config::PAPER_NOTE_TITLE))
+}
+
+fn get_paper_folder(notes: &Notes) -> Result<PathBuf> {
+    let paper_folder = notes.folder.join(config::PAPER_FOLDER_NAME);
+    if !paper_folder.is_dir() {
+        return Err(anyhow!("No folder '{}' found in notes folder.", config::PAPER_FOLDER_NAME));
     }
+    Ok(paper_folder)
+}
+
+fn create_new_paper_note_from_title<'a>(notes: &'a mut Notes, citekey: &str) -> Result<&'a Note> {
+    let paper_note = get_paper_base_note(notes)?;
+    let paper_folder = get_paper_folder(notes)?;
+    let cite_string = format!("cite:{}", citekey);
+    let link_text = paper_note.get_link_from_folder(&paper_folder)?;
+    let additional_content = format!("\n{}\n{}", &link_text, cite_string);
+    let title = citekey;
+    let target_note =
+        find_or_create_note_with_special_content(notes, &paper_folder, &title, &additional_content)?;
+    Ok(target_note)
 }
 
 impl Named for String {

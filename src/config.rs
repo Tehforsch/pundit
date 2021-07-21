@@ -18,3 +18,6 @@ pub static ANKI_NOTE_FIELD_TEMPLATE: &str = "    {fieldName}: ";
 pub static JOURNAL_TITLE_FORMAT: &str = "{} {}";
 pub static JOURNAL_DATE_FORMAT_STR: &str = "%Y %m %d";
 pub static JOURNAL_IN_SUBFOLDERS: bool = true;
+
+pub static PAPER_NOTE_TITLE: &str = "paper";
+pub static PAPER_FOLDER_NAME: &str = "papers";
