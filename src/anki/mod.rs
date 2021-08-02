@@ -7,7 +7,7 @@ pub mod anki_note;
 
 use crypto::digest::Digest;
 use crypto::sha1::Sha1;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, NO_PARAMS};
 use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -297,6 +297,17 @@ pub fn get_string_from_sfld_row(row: &rusqlite::Row, index: usize) -> Result<Str
 }
 
 pub fn read_collection(connection: &Connection) -> rusqlite::Result<AnkiCollection> {
+    let version = get_database_schema_version(connection)?;
+    let collection = match version {
+        14 => read_collection_version_14(connection),
+        16 => read_collection_version_16(connection),
+        _ => panic!("Unsupported database version: {}", version),
+    };
+
+    collection
+}
+
+fn read_collection_version_14(connection: &Connection) -> rusqlite::Result<AnkiCollection> {
     let mut stmt = connection.prepare(
         "SELECT id, crt, mod, scm, ver, dty, usn, ls, conf, models, decks, dconf, tags FROM col",
     )?;
@@ -322,6 +333,13 @@ pub fn read_collection(connection: &Connection) -> rusqlite::Result<AnkiCollecti
         .next()
         .expect("No row in collection table");
     assert!(collection_iterator.next().is_none()); // We should only have one row in this table
+    collection
+}
 
-    Ok(collection?)
+fn read_collection_version_16(connection: &Connection) -> rusqlite::Result<AnkiCollection> {
+    todo!()
+}
+
+fn get_database_schema_version(connection: &Connection) -> rusqlite::Result<u8> {
+    Ok(connection.query_row("select ver from col", NO_PARAMS, |r| Ok(r.get(0)?))?)
 }
