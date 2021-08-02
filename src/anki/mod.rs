@@ -15,12 +15,13 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use anyhow::{anyhow, Context, Result};
 use log::info;
 
+use crate::anki::anki_deck::get_anki_decks_from_table;
 use crate::named::get_by_name;
 
 use self::anki_card::AnkiCard;
 use self::anki_collection::AnkiCollection;
 use self::anki_deck::{get_anki_decks_from_json, AnkiDeck};
-use self::anki_model::{get_anki_models_from_json, AnkiModel};
+use self::anki_model::{AnkiModel, get_anki_models_from_json, get_anki_models_from_table};
 use self::anki_note::AnkiNote;
 
 #[derive(Debug)]
@@ -299,7 +300,7 @@ pub fn get_string_from_sfld_row(row: &rusqlite::Row, index: usize) -> Result<Str
 pub fn read_collection(connection: &Connection) -> rusqlite::Result<AnkiCollection> {
     let version = get_database_schema_version(connection)?;
     let collection = match version {
-        14 => read_collection_version_14(connection),
+        11 | 14 => read_collection_version_14(connection),
         16 => read_collection_version_16(connection),
         _ => panic!("Unsupported database version: {}", version),
     };
@@ -309,24 +310,13 @@ pub fn read_collection(connection: &Connection) -> rusqlite::Result<AnkiCollecti
 
 fn read_collection_version_14(connection: &Connection) -> rusqlite::Result<AnkiCollection> {
     let mut stmt = connection.prepare(
-        "SELECT id, crt, mod, scm, ver, dty, usn, ls, conf, models, decks, dconf, tags FROM col",
+        "SELECT models, decks FROM col",
     )?;
     let mut collection_iterator = stmt.query_map(params![], |row| {
         Ok(AnkiCollection {
-            id: row.get(0)?,
-            crt: row.get(1)?,
-            mod_: row.get(2)?,
-            scm: row.get(3)?,
-            ver: row.get(4)?,
-            dty: row.get(5)?,
-            usn: row.get(6)?,
-            ls: row.get(7)?,
-            conf: row.get(8)?,
-            models: get_anki_models_from_json(row.get(9)?)
+            models: get_anki_models_from_json(row.get(0)?)
                 .expect("Failed to read anki models json"),
-            decks: get_anki_decks_from_json(row.get(10)?).expect("Failed to read anki decks json"),
-            dconf: row.get(11)?,
-            tags: row.get(12)?,
+            decks: get_anki_decks_from_json(row.get(1)?).expect("Failed to read anki decks json"),
         })
     })?;
     let collection = collection_iterator
@@ -337,7 +327,10 @@ fn read_collection_version_14(connection: &Connection) -> rusqlite::Result<AnkiC
 }
 
 fn read_collection_version_16(connection: &Connection) -> rusqlite::Result<AnkiCollection> {
-    todo!()
+    Ok(AnkiCollection {
+        decks: get_anki_decks_from_table(connection).expect("Failed to read anki decks from table"),
+        models: get_anki_models_from_table(connection).expect("Failed to read anki models from table"),
+    })
 }
 
 fn get_database_schema_version(connection: &Connection) -> rusqlite::Result<u8> {
