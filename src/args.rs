@@ -7,13 +7,10 @@ use crate::{filter_options::FilterOptions, journal_opts::JournalOpts, paper_opts
 #[derive(Clap)]
 #[clap(version = "0.1.0", author = "Toni Peter")]
 pub struct Opts {
-    /// A level of verbosity, and can be used multiple times
-    #[clap(short, long, parse(from_occurrences))]
-    pub verbose: i32,
     #[clap(subcommand)]
     pub subcmd: SubCommand,
     /// The note folder to run on
-    pub folder: PathBuf,
+    pub folder: Option<PathBuf>,
     /// The path to the database in which to store the notes and their links for fast access times
     pub database: Option<PathBuf>,
     /// Run only on the top level folder.

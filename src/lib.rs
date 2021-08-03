@@ -17,3 +17,4 @@ pub mod pankit;
 pub mod paper;
 pub mod paper_opts;
 pub mod named;
+pub mod settings;

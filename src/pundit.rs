@@ -3,6 +3,7 @@ pub mod logger;
 use anyhow::{anyhow, Result};
 use logger::init_logger;
 use pundit::notes::Notes;
+use pundit::settings::Settings;
 use pundit::{filter_options::FilterOptions, fzf::run_fzf};
 use pundit::{note_utils::get_backlinks, notes::read_notes};
 use std::error::Error;
@@ -15,12 +16,24 @@ use pundit::note::{create_new_note_from_title, Note};
 use log::{info, error};
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let args = get_args();
+    let mut args = get_args();
+    let settings = Settings::from_default_location();
+    if let Some(mut settings) = settings {
+        settings.expand_all_paths()?;
+        update_args_with_settings(&mut args, &settings);
+    }
     init_logger(args.add_identifier).unwrap();
-    let note_folder = args.folder.canonicalize()?;
+    let note_folder = args.folder.as_ref().unwrap().canonicalize()?;
     let mut notes = read_notes(&note_folder, &args.database, !args.singledir)?;
     run(args, &mut notes)?;
     Ok(())
+}
+
+fn update_args_with_settings(args: &mut Opts, settings: &Settings) {
+    args.folder = args.folder.clone().or(settings.pundit_folder.clone());
+    if args.folder.is_none() {
+        panic!("No pundit folder specified!");
+    }
 }
 
 fn get_notes<'a>(
