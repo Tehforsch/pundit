@@ -1,7 +1,11 @@
 use crate::named::Named;
+use crate::anki::proto::note_types::notetype::Config as NoteFieldConfig;
 use rusqlite::{Connection, params};
 use serde_derive::Deserialize;
 use serde_json::{Result, Value};
+use prost::Message;
+
+use super::proto::note_types::{NotetypeId, notetype::Field as NoteField};
 
 #[derive(Debug, Deserialize)]
 pub struct AnkiField {
@@ -23,16 +27,34 @@ pub struct AnkiModel {
 }
 
 pub fn get_anki_models_from_table(connection: &Connection) -> rusqlite::Result<Vec<AnkiModel>> {
-    todo!()
-    // let mut stmt = connection.prepare(
-    //     "SELECT id, name FROM decks"
-    // )?;
-    // stmt.query_map(params![], |row| {
-    //     Ok(AnkiDeck {
-    //         id: row.get(0)?,
-    //         name: row.get(1)?,
-    //     })
-    // }).collect()
+    let mut stmt = connection.prepare(
+        "SELECT id, name, config FROM notetypes"
+    )?;
+    let mut models: Vec<AnkiModel> = stmt.query_map(params![], |row| {
+        let config = NoteFieldConfig::decode(row.get_raw(2).as_blob()?).expect("Failed to decode anki model config");
+        Ok(AnkiModel { 
+            id: row.get(0)?,
+            name: row.get(1)?,
+            sortf: config.sort_field_idx as i64,
+            tmpls: vec![],
+            flds: vec![],
+        })
+    })?.collect::<rusqlite::Result<Vec<_>>>()?;
+    for model in models.iter_mut() {
+        model.flds = add_anki_fields_from_table(connection, model.id)?;
+        // model.tmpls = add_anki_fields_from_table(connection, model.id)?;
+    }
+    Ok(models)
+}
+
+fn add_anki_fields_from_table(connection: &Connection, id: i64) -> rusqlite::Result<Vec<AnkiField>> {
+    let mut stmt = connection.prepare("SELECT ord, name, config FROM FIELDS WHERE ntid = ? ORDER BY ord")?;
+    let stmt_iterator = stmt.query_and_then([id], |row| {
+        Ok(AnkiField {
+            name: row.get(1)?,
+        })
+    })?;
+    stmt_iterator.collect::<rusqlite::Result<Vec<_>>>()
 }
 
 pub fn get_anki_models_from_json(json_data: String) -> Result<Vec<AnkiModel>> {

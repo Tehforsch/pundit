@@ -58,6 +58,26 @@ fn new_database_schema_list_decks() {
     assert!(out.output.contains("Default"));
 }
 
+#[test]
+fn new_database_schema_list_models() {
+    let out = run_ankitool_on_setup("newDatabaseSchemaListModels", &["list-models"]).unwrap();
+    assert!(out.output.contains("SomeModel"));
+    assert!(out.output.contains("SomeModel2"));
+    assert!(out.output.contains("SomeModel3"));
+    assert!(out.output.contains("SomeModel4"));
+    assert!(out.output.contains("SomeModel4"));
+}
+
+#[test]
+fn new_database_schema_list_fields() {
+    let out = run_ankitool_on_setup("listFields", &["list-fields", "SomeModel"]).unwrap();
+    assert!(out.output.contains("Front"));
+    assert!(out.output.contains("Back"));
+    assert!(out.output.contains("SomeField1"));
+    assert!(out.output.contains("SomeField2"));
+    assert!(out.output.contains("SomeField3"));
+}
+
 fn run_ankitool_on_setup(setup_name: &str, args: &[&str]) -> Result<TestOutput> {
     let env = setup_test(
         get_ankitool_executable(),

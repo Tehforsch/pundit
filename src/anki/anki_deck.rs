@@ -14,9 +14,10 @@ pub fn get_anki_decks_from_table(connection: &Connection) -> rusqlite::Result<Ve
         "SELECT id, name FROM decks"
     )?;
     let iterator = stmt.query_map(params![], |row| {
+        let name: String = row.get::<_, String>(1)?.replace("\u{1f}", "::");
         Ok(AnkiDeck {
             id: row.get(0)?,
-            name: row.get(1)?,
+            name,
         })
     })?;
     iterator.collect()

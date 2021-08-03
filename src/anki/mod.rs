@@ -4,6 +4,7 @@ pub mod anki_collection;
 pub mod anki_deck;
 pub mod anki_model;
 pub mod anki_note;
+pub mod proto;
 
 use crypto::digest::Digest;
 use crypto::sha1::Sha1;
@@ -336,3 +337,4 @@ fn read_collection_version_16(connection: &Connection) -> rusqlite::Result<AnkiC
 fn get_database_schema_version(connection: &Connection) -> rusqlite::Result<u8> {
     Ok(connection.query_row("select ver from col", NO_PARAMS, |r| Ok(r.get(0)?))?)
 }
+
