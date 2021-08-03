@@ -77,12 +77,17 @@ fn new_database_schema_list_models() {
 
 #[test]
 fn new_database_schema_list_fields() {
-    let out = run_ankitool_on_setup("listFields", &["list-fields", "SomeModel"]).unwrap();
+    let out = run_ankitool_on_setup("newDatabaseSchemaListFields", &["list-fields", "SomeModel"]).unwrap();
     assert!(out.output.contains("Front"));
     assert!(out.output.contains("Back"));
-    assert!(out.output.contains("SomeField1"));
-    assert!(out.output.contains("SomeField2"));
-    assert!(out.output.contains("SomeField3"));
+    assert!(out.output.contains("Add Reverse"));
+}
+
+#[test]
+fn new_database_schema_list_templates() {
+    let out = run_ankitool_on_setup("newDatabaseSchemaListFields", &["list-templates", "SomeModel"]).unwrap();
+    assert!(out.output.contains("Card 1"));
+    assert!(out.output.contains("Card 2"));
 }
 
 fn run_ankitool_on_setup(setup_name: &str, args: &[&str]) -> Result<TestOutput> {

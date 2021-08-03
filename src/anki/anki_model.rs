@@ -42,16 +42,27 @@ pub fn get_anki_models_from_table(connection: &Connection) -> rusqlite::Result<V
         })
     })?.collect::<rusqlite::Result<Vec<_>>>()?;
     for model in models.iter_mut() {
-        model.flds = add_anki_fields_from_table(connection, model.id)?;
-        // model.tmpls = add_anki_fields_from_table(connection, model.id)?;
+        model.flds = get_anki_fields_from_table(connection, model.id)?;
+        model.tmpls = get_anki_templates_from_table(connection, model.id)?;
     }
     Ok(models)
 }
 
-fn add_anki_fields_from_table(connection: &Connection, id: i64) -> rusqlite::Result<Vec<AnkiField>> {
-    let mut stmt = connection.prepare("SELECT ord, name, config FROM FIELDS WHERE ntid = ? ORDER BY ord")?;
+fn get_anki_fields_from_table(connection: &Connection, id: i64) -> rusqlite::Result<Vec<AnkiField>> {
+    let mut stmt = connection.prepare("SELECT name FROM FIELDS WHERE ntid = ? ORDER BY ord")?;
     let stmt_iterator = stmt.query_and_then([id], |row| {
         Ok(AnkiField {
+            name: row.get(0)?,
+        })
+    })?;
+    stmt_iterator.collect::<rusqlite::Result<Vec<_>>>()
+}
+
+fn get_anki_templates_from_table(connection: &Connection, id: i64) -> rusqlite::Result<Vec<AnkiCardTemplate>> {
+    let mut stmt = connection.prepare("SELECT ord, name FROM TEMPLATES WHERE ntid = ? ORDER BY ord")?;
+    let stmt_iterator = stmt.query_and_then([id], |row| {
+        Ok(AnkiCardTemplate {
+            ord: row.get(0)?,
             name: row.get(1)?,
         })
     })?;
