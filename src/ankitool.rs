@@ -34,6 +34,14 @@ pub fn list_fields(collection: &AnkiCollection, model_name: &str) -> Result<()> 
     Ok(())
 }
 
+pub fn list_templates(collection: &AnkiCollection, model_name: &str) -> Result<()> {
+    let model = get_model_by_name(collection, model_name)?;
+    for template in model.tmpls.iter() {
+        info!("{}", template.name);
+    }
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let args = get_args();
     init_logger(false).unwrap();
@@ -53,6 +61,7 @@ fn run(_connection: &Connection, collection: &AnkiCollection, args: AnkiOpts) ->
         AnkiSubCommand::ListModels(_) => list_models(&collection)?,
         AnkiSubCommand::ListDecks(_) => list_decks(&collection)?,
         AnkiSubCommand::ListFields(l) => list_fields(&collection, &l.model)?,
+        AnkiSubCommand::ListTemplates(l) => list_templates(&collection, &l.model)?,
     }
     Ok(())
 }

@@ -14,6 +14,7 @@ pub struct AnkiField {
 
 #[derive(Debug, Deserialize)]
 pub struct AnkiCardTemplate {
+    pub name: String,
     pub ord: i64,         // template number, see flds,
 }
 

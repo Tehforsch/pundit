@@ -19,6 +19,7 @@ pub enum AnkiSubCommand {
     ListModels(ListModels),
     ListDecks(ListDecks),
     ListFields(ListFields),
+    ListTemplates(ListTemplates),
 }
 
 /// List all the models (note types) in the anki database
@@ -32,5 +33,11 @@ pub struct ListDecks {}
 /// List all the fields for a given model (note type)
 #[derive(Clap, Debug)]
 pub struct ListFields {
+    pub model: String,
+}
+
+/// List all the card templates for a given model (note type)
+#[derive(Clap, Debug)]
+pub struct ListTemplates {
     pub model: String,
 }

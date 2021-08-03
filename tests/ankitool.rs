@@ -48,6 +48,13 @@ fn list_fields() {
 }
 
 #[test]
+fn list_templates() {
+    let out = run_ankitool_on_setup("listFields", &["list-templates", "SomeModel"]).unwrap();
+    assert!(out.output.contains("Card 1"));
+    assert!(out.output.contains("Card 2"));
+}
+
+#[test]
 fn new_database_schema_list_decks() {
     let out = run_ankitool_on_setup("newDatabaseSchemaListDecks", &["list-decks"]).unwrap();
     assert!(out.output.contains("All"));
