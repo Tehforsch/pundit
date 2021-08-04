@@ -1,7 +1,5 @@
 # Pundit
 
-[Github repository](https://github.com/tehforsch/pundit)
-
 Pundit is a note taking system which is very loosely based on the famous Zettelkasten method. The core of pundit is a simple set up which allows quickly creating new notes (a note is just a markdown/org type file with a title) and creating links between notes. 
 
 There is a lot of software with very similar properties to pundit. One feature that sets pundit apart is that, it is a standalone program and not necessarily tied to any specific editor. Even though there currently only is an interface implementation for emacs, it would be fairly simple to implement an interface for a different editor, since all of the more complex logic (making sure the links in all notes are sound, resolving backlinks onto notes, sorting notes by the shortest link-path between them and other fun things) is done in pundit itself. 
