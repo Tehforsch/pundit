@@ -1,12 +1,18 @@
-use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
+use std::env;
+use std::ffi::OsStr;
+use std::fmt::Display;
+use std::fs;
+use std::path::Path;
+use std::path::PathBuf;
+use std::process::Command;
+use std::process::Stdio;
 use std::str;
-use std::{env, fmt::Display};
-use std::{ffi::OsStr, fs};
+
 use tempdir::TempDir;
 pub mod dir_diff;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 
 use self::dir_diff::check_dir_diff;
 

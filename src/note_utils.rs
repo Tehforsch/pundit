@@ -2,11 +2,10 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use crate::{
-    file_utils::append_to_file,
-    note::{create_new_note_from_title, Note},
-    notes::Notes,
-};
+use crate::file_utils::append_to_file;
+use crate::note::create_new_note_from_title;
+use crate::note::Note;
+use crate::notes::Notes;
 
 pub fn get_backlinks<'a>(notes: &'a Notes, note: &'a Note) -> impl Iterator<Item = &'a Note> {
     note.backlinks.iter().map(move |link| &notes[*link])

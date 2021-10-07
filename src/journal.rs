@@ -1,10 +1,19 @@
-use crate::{journal_info::JournalInfo, journal_opts::JournalOpts, note::Note, note_utils::find_or_create_note_with_special_content};
-use crate::{journal_opts::JournalSubCommand, note_arg::NoteArg};
-use crate::{note_utils::get_backlinks, notes::Notes};
-
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Result;
+use chrono::Duration;
+use chrono::Local;
+use chrono::NaiveDate;
 use log::info;
-use anyhow::{anyhow, Context, Result};
-use chrono::{Duration, Local, NaiveDate};
+
+use crate::journal_info::JournalInfo;
+use crate::journal_opts::JournalOpts;
+use crate::journal_opts::JournalSubCommand;
+use crate::note::Note;
+use crate::note_arg::NoteArg;
+use crate::note_utils::find_or_create_note_with_special_content;
+use crate::note_utils::get_backlinks;
+use crate::notes::Notes;
 
 pub fn run_journal(notes: &mut Notes, args: &JournalOpts) -> Result<()> {
     let journal_info = JournalInfo::from_name(notes, &args.name)?;

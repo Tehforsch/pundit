@@ -1,11 +1,13 @@
 pub mod setup;
 
-use regex::Regex;
-use setup::{TestArg::NormalArg, TestArg::RelativePath};
 use std::fs;
 
-use pundit::dir_utils::{get_files, get_folders};
+use pundit::dir_utils::get_files;
+use pundit::dir_utils::get_folders;
+use regex::Regex;
 use setup::run_pundit_on_setup;
+use setup::TestArg::NormalArg;
+use setup::TestArg::RelativePath;
 
 #[test]
 fn yesterday() {

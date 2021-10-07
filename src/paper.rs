@@ -1,9 +1,21 @@
-use std::{fs, path::{Path, PathBuf}};
+use std::fs;
+use std::path::Path;
+use std::path::PathBuf;
 
-use anyhow::{Context, Result, anyhow};
-use log::{info};
-use crate::{config, fzf::select_interactively, named::Named, note::Note, note_utils::find_or_create_note_with_special_content, notes::Notes, paper_opts::{PaperOpts, PaperSubCommand}};
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Result;
+use log::info;
 use regex::Regex;
+
+use crate::config;
+use crate::fzf::select_interactively;
+use crate::named::Named;
+use crate::note::Note;
+use crate::note_utils::find_or_create_note_with_special_content;
+use crate::notes::Notes;
+use crate::paper_opts::PaperOpts;
+use crate::paper_opts::PaperSubCommand;
 
 pub fn run_paper(notes: &mut Notes, args: &PaperOpts) -> Result<()> {
     let bibtex_file = args.bibtex_file.canonicalize()?;
@@ -12,7 +24,6 @@ pub fn run_paper(notes: &mut Notes, args: &PaperOpts) -> Result<()> {
         PaperSubCommand::List => list_papers(&bibtex_file),
     }
 }
-
 
 fn list_papers(bibtex_file: &Path) -> Result<()> {
     let citekeys = get_citekeys_from_file(bibtex_file)?;
@@ -33,13 +44,17 @@ fn find_paper_note(notes: &mut Notes, bibtex_file: &Path) -> Result<()> {
 }
 
 fn get_citekeys_from_file(file: &Path) -> Result<Vec<String>> {
-    let file_contents = fs::read_to_string(file).context(format!("While reading bibtex file at {:?}", &file))?;
+    let file_contents =
+        fs::read_to_string(file).context(format!("While reading bibtex file at {:?}", &file))?;
     Ok(get_citekeys_from_contents(&file_contents))
 }
 
 fn get_citekeys_from_contents(contents: &str) -> Vec<String> {
-    let re = Regex::new(r"@(article|inproceedings|book|inbook|proceedings|phdthesis)\{(\w*),").unwrap();
-    re.captures_iter(contents).map(|capture| capture.get(2).unwrap().as_str().to_owned()).collect()
+    let re =
+        Regex::new(r"@(article|inproceedings|book|inbook|proceedings|phdthesis)\{(\w*),").unwrap();
+    re.captures_iter(contents)
+        .map(|capture| capture.get(2).unwrap().as_str().to_owned())
+        .collect()
 }
 
 fn find_note_for_cite_key<'a>(notes: &'a mut Notes, citekey: &str) -> Result<&'a Note> {
@@ -53,7 +68,10 @@ fn get_paper_base_note(notes: &Notes) -> Result<&Note> {
 fn get_paper_folder(notes: &Notes) -> Result<PathBuf> {
     let paper_folder = notes.folder.join(config::PAPER_FOLDER_NAME);
     if !paper_folder.is_dir() {
-        return Err(anyhow!("No folder '{}' found in notes folder.", config::PAPER_FOLDER_NAME));
+        return Err(anyhow!(
+            "No folder '{}' found in notes folder.",
+            config::PAPER_FOLDER_NAME
+        ));
     }
     Ok(paper_folder)
 }
@@ -65,8 +83,12 @@ fn create_new_paper_note_from_title<'a>(notes: &'a mut Notes, citekey: &str) -> 
     let link_text = paper_note.get_link_from_folder(&paper_folder)?;
     let additional_content = format!("\n{}\n{}", &link_text, cite_string);
     let title = citekey;
-    let target_note =
-        find_or_create_note_with_special_content(notes, &paper_folder, &title, &additional_content)?;
+    let target_note = find_or_create_note_with_special_content(
+        notes,
+        &paper_folder,
+        &title,
+        &additional_content,
+    )?;
     Ok(target_note)
 }
 

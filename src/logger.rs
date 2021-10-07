@@ -1,8 +1,15 @@
-use log::{Record, Level, Metadata};
-use log::{LevelFilter, SetLoggerError};
+use log::Level;
+use log::LevelFilter;
+use log::Metadata;
+use log::Record;
+use log::SetLoggerError;
 
-static IDENTIFIER_LOGGER: ResultLogger = ResultLogger { add_identifier: true };
-static NO_IDENTIFIER_LOGGER: ResultLogger = ResultLogger { add_identifier: false };
+static IDENTIFIER_LOGGER: ResultLogger = ResultLogger {
+    add_identifier: true,
+};
+static NO_IDENTIFIER_LOGGER: ResultLogger = ResultLogger {
+    add_identifier: false,
+};
 
 pub struct ResultLogger {
     pub add_identifier: bool,
@@ -30,6 +37,5 @@ pub fn init_logger(add_identifier: bool) -> core::result::Result<(), SetLoggerEr
         true => &IDENTIFIER_LOGGER,
         false => &NO_IDENTIFIER_LOGGER,
     };
-    log::set_logger(logger)
-        .map(|()| log::set_max_level(LevelFilter::Debug))
+    log::set_logger(logger).map(|()| log::set_max_level(LevelFilter::Debug))
 }

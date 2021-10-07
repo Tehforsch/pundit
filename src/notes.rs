@@ -1,15 +1,22 @@
-use crate::config::NOTE_EXTENSION;
-use crate::dir_utils::get_files;
-use crate::dir_utils::get_files_recursively;
-use crate::note::{get_link_filenames, Note};
-use anyhow::{anyhow, Context, Result};
-use generational_arena::{Arena, Index};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
+
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Result;
+use generational_arena::Arena;
+use generational_arena::Index;
+use serde::Deserialize;
+use serde::Serialize;
+
+use crate::config::NOTE_EXTENSION;
+use crate::dir_utils::get_files;
+use crate::dir_utils::get_files_recursively;
+use crate::note::get_link_filenames;
+use crate::note::Note;
 
 #[derive(Deserialize, Serialize)]
 pub struct NotesDatabase {

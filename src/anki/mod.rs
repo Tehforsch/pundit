@@ -6,24 +6,31 @@ pub mod anki_model;
 pub mod anki_note;
 pub mod proto;
 
-use crypto::digest::Digest;
-use crypto::sha1::Sha1;
-use rusqlite::{params, Connection, NO_PARAMS};
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Result;
+use crypto::digest::Digest;
+use crypto::sha1::Sha1;
 use log::info;
-
-use crate::anki::anki_deck::get_anki_decks_from_table;
-use crate::named::get_by_name;
+use rusqlite::params;
+use rusqlite::Connection;
+use rusqlite::NO_PARAMS;
 
 use self::anki_card::AnkiCard;
 use self::anki_collection::AnkiCollection;
-use self::anki_deck::{get_anki_decks_from_json, AnkiDeck};
-use self::anki_model::{AnkiModel, get_anki_models_from_json, get_anki_models_from_table};
+use self::anki_deck::get_anki_decks_from_json;
+use self::anki_deck::AnkiDeck;
+use self::anki_model::get_anki_models_from_json;
+use self::anki_model::get_anki_models_from_table;
+use self::anki_model::AnkiModel;
 use self::anki_note::AnkiNote;
+use crate::anki::anki_deck::get_anki_decks_from_table;
+use crate::named::get_by_name;
 
 #[derive(Debug)]
 pub struct AnkiNoteInfo {
@@ -310,9 +317,7 @@ pub fn read_collection(connection: &Connection) -> rusqlite::Result<AnkiCollecti
 }
 
 fn read_collection_version_14(connection: &Connection) -> rusqlite::Result<AnkiCollection> {
-    let mut stmt = connection.prepare(
-        "SELECT models, decks FROM col",
-    )?;
+    let mut stmt = connection.prepare("SELECT models, decks FROM col")?;
     let mut collection_iterator = stmt.query_map(params![], |row| {
         Ok(AnkiCollection {
             models: get_anki_models_from_json(row.get(0)?)
@@ -330,11 +335,11 @@ fn read_collection_version_14(connection: &Connection) -> rusqlite::Result<AnkiC
 fn read_collection_version_16(connection: &Connection) -> rusqlite::Result<AnkiCollection> {
     Ok(AnkiCollection {
         decks: get_anki_decks_from_table(connection).expect("Failed to read anki decks from table"),
-        models: get_anki_models_from_table(connection).expect("Failed to read anki models from table"),
+        models: get_anki_models_from_table(connection)
+            .expect("Failed to read anki models from table"),
     })
 }
 
 fn get_database_schema_version(connection: &Connection) -> rusqlite::Result<u8> {
     Ok(connection.query_row("select ver from col", NO_PARAMS, |r| Ok(r.get(0)?))?)
 }
-

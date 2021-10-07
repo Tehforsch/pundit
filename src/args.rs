@@ -1,7 +1,11 @@
-use clap::Clap;
-use std::{path::PathBuf, str::FromStr};
+use std::path::PathBuf;
+use std::str::FromStr;
 
-use crate::{filter_options::FilterOptions, journal_opts::JournalOpts, paper_opts::PaperOpts};
+use clap::Clap;
+
+use crate::filter_options::FilterOptions;
+use crate::journal_opts::JournalOpts;
+use crate::paper_opts::PaperOpts;
 
 /// Manage notes and links between them.
 #[derive(Clap)]
@@ -19,7 +23,7 @@ pub struct Opts {
     /// Add identifying lines to the beginning and the end of stdout so that output can be more easily parsed
     /// from terminal output in emacs (via term-char-mode)
     #[clap(short, long)]
-    pub add_identifier:bool
+    pub add_identifier: bool,
 }
 
 #[derive(Clap, Debug)]
@@ -156,7 +160,7 @@ pub struct PankitGetNote {
     pub database: PathBuf,
     /// Path to a pundit note. If this note contains anki notes, the model and deck from the first note will be used.
     /// If the note does not contain a pankit block, pundit will ask for the model and deck interactively.
-    pub model_filename: Option<PathBuf>
+    pub model_filename: Option<PathBuf>,
 }
 
 #[derive(Clap, Debug)]

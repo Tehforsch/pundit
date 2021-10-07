@@ -2,9 +2,10 @@ pub mod setup;
 
 use std::path::Path;
 
-use setup::TestArg::{NormalArg, RelativePath};
-
-use setup::{run_pundit_on_setup, TestEnv};
+use setup::run_pundit_on_setup;
+use setup::TestArg::NormalArg;
+use setup::TestArg::RelativePath;
+use setup::TestEnv;
 
 #[test]
 fn read_notes() {

@@ -2,15 +2,20 @@ pub mod anki;
 pub mod logger;
 pub mod named;
 
-use crate::anki::anki_args::{AnkiOpts, AnkiSubCommand};
-use crate::anki::anki_collection::AnkiCollection;
-use crate::anki::{close_connection, get_model_by_name, read_collection};
+use std::error::Error;
+
 use anyhow::Result;
 use clap::Clap;
+use log::info;
 use logger::init_logger;
 use rusqlite::Connection;
-use std::error::Error;
-use log::info;
+
+use crate::anki::anki_args::AnkiOpts;
+use crate::anki::anki_args::AnkiSubCommand;
+use crate::anki::anki_collection::AnkiCollection;
+use crate::anki::close_connection;
+use crate::anki::get_model_by_name;
+use crate::anki::read_collection;
 
 pub fn list_models(collection: &AnkiCollection) -> Result<()> {
     for model in collection.models.iter() {

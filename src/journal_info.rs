@@ -1,11 +1,16 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Result;
 use chrono::NaiveDate;
 
-use crate::{
-    config, dir_utils::create_folder, note::Note, note_utils::find_or_create_note, notes::Notes,
-};
+use crate::config;
+use crate::dir_utils::create_folder;
+use crate::note::Note;
+use crate::note_utils::find_or_create_note;
+use crate::notes::Notes;
 
 pub struct JournalInfo {
     pub name: String,

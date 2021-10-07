@@ -13,5 +13,5 @@ pub struct PaperOpts {
 #[derive(Clap, Debug)]
 pub enum PaperSubCommand {
     List,
-    Find
+    Find,
 }

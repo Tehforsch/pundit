@@ -1,5 +1,6 @@
-use crate::note_arg::NoteArg;
 use clap::Clap;
+
+use crate::note_arg::NoteArg;
 
 /// Open notes from a journal - date based notes.
 #[derive(Clap, Debug)]

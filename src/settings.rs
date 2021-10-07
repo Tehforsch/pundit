@@ -1,6 +1,9 @@
-use std::{fs::File, path::{Path, PathBuf}};
+use std::fs::File;
+use std::path::Path;
+use std::path::PathBuf;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 use clap::crate_name;
 use dirs_next::config_dir;
 use serde::Deserialize;

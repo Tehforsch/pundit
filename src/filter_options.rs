@@ -2,7 +2,8 @@ use std::path::Path;
 
 use clap::Clap;
 
-use crate::{dir_utils::get_relative_path, note::Note};
+use crate::dir_utils::get_relative_path;
+use crate::note::Note;
 /// Various options for filtering lists of notes
 #[derive(Clap, Debug)]
 pub enum FilterOptions {

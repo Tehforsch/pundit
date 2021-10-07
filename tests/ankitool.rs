@@ -7,9 +7,10 @@ use setup::setup_test;
 mod setup;
 mod sqlcheck;
 
-use crate::sqlcheck::check_same_notes_and_cards;
 use setup::get_ankitool_executable;
 use setup::TestOutput;
+
+use crate::sqlcheck::check_same_notes_and_cards;
 
 pub static TEST_SETUPS_PATH: &str = "testSetupsAnkitool";
 pub static DEFAULT_ANKI_SOURCE_COLLECTION_NAME: &str = "source.anki2";
@@ -77,7 +78,8 @@ fn new_database_schema_list_models() {
 
 #[test]
 fn new_database_schema_list_fields() {
-    let out = run_ankitool_on_setup("newDatabaseSchemaListFields", &["list-fields", "SomeModel"]).unwrap();
+    let out = run_ankitool_on_setup("newDatabaseSchemaListFields", &["list-fields", "SomeModel"])
+        .unwrap();
     assert!(out.output.contains("Front"));
     assert!(out.output.contains("Back"));
     assert!(out.output.contains("Add Reverse"));
@@ -85,7 +87,11 @@ fn new_database_schema_list_fields() {
 
 #[test]
 fn new_database_schema_list_templates() {
-    let out = run_ankitool_on_setup("newDatabaseSchemaListFields", &["list-templates", "SomeModel"]).unwrap();
+    let out = run_ankitool_on_setup(
+        "newDatabaseSchemaListFields",
+        &["list-templates", "SomeModel"],
+    )
+    .unwrap();
     assert!(out.output.contains("Card 1"));
     assert!(out.output.contains("Card 2"));
 }

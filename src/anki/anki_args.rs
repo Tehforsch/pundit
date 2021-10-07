@@ -1,5 +1,6 @@
-use clap::Clap;
 use std::path::PathBuf;
+
+use clap::Clap;
 
 /// Read and write anki databases
 #[derive(Clap)]

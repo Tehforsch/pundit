@@ -5,9 +5,13 @@ use anyhow::Result;
 mod setup;
 mod sqlcheck;
 
+use setup::get_pundit_executable;
+use setup::run_pundit_on_setup_with_args;
+use setup::show_output;
 use setup::TestArg;
-use setup::TestArg::{NormalArg, RelativePath};
-use setup::{get_pundit_executable, run_pundit_on_setup_with_args, show_output, TestOutput};
+use setup::TestArg::NormalArg;
+use setup::TestArg::RelativePath;
+use setup::TestOutput;
 
 use crate::sqlcheck::check_same_notes_and_cards;
 

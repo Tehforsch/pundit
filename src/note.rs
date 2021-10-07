@@ -1,21 +1,27 @@
-use crate::{
-    config::{LINK_FORMAT, NOTE_DATE_FORMAT_STR, NOTE_FILENAME_STR_FORMAT, TITLE_STRING},
-    dir_utils::get_relative_path,
-    notes::Notes,
-};
-use regex::Regex;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Result;
+use chrono::DateTime;
+use chrono::Local;
 use generational_arena::Index;
-use serde::{Deserialize, Serialize};
-
-use anyhow::{anyhow, Context, Result};
-use chrono::{DateTime, Local};
 use log::info;
+use regex::Regex;
+use serde::Deserialize;
+use serde::Serialize;
+
+use crate::config::LINK_FORMAT;
+use crate::config::NOTE_DATE_FORMAT_STR;
+use crate::config::NOTE_FILENAME_STR_FORMAT;
+use crate::config::TITLE_STRING;
+use crate::dir_utils::get_relative_path;
+use crate::notes::Notes;
 
 #[derive(Debug, Clone)]
 struct InvalidNoteError;

@@ -1,9 +1,11 @@
-use anyhow::{anyhow, Context, Result};
 use std::fs;
 use std::fs::DirEntry;
 use std::path::Path;
 use std::path::PathBuf;
 
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Result;
 use pathdiff::diff_paths;
 
 fn traverse_folder_files(folder: &Path) -> Result<Box<dyn Iterator<Item = PathBuf>>> {

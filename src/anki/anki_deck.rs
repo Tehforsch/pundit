@@ -1,18 +1,19 @@
-use crate::named::Named;
-use rusqlite::{Connection, params};
+use rusqlite::params;
+use rusqlite::Connection;
 use serde_derive::Deserialize;
-use serde_json::{Result, Value};
+use serde_json::Result;
+use serde_json::Value;
+
+use crate::named::Named;
 
 #[derive(Debug, Deserialize)]
 pub struct AnkiDeck {
     pub name: String, // name of deck
-    pub id: i64,           // deck ID (automatically generated long)
+    pub id: i64,      // deck ID (automatically generated long)
 }
 
 pub fn get_anki_decks_from_table(connection: &Connection) -> rusqlite::Result<Vec<AnkiDeck>> {
-    let mut stmt = connection.prepare(
-        "SELECT id, name FROM decks"
-    )?;
+    let mut stmt = connection.prepare("SELECT id, name FROM decks")?;
     let iterator = stmt.query_map(params![], |row| {
         let name: String = row.get::<_, String>(1)?.replace("\u{1f}", "::");
         Ok(AnkiDeck {
@@ -37,7 +38,6 @@ pub fn get_anki_decks_from_json(json_data: String) -> Result<Vec<AnkiDeck>> {
 pub fn get_anki_deck(deck_value: &Value) -> Result<AnkiDeck> {
     serde_json::from_value::<AnkiDeck>(deck_value.clone())
 }
-
 
 impl Named for AnkiDeck {
     fn get_name(&self) -> &str {

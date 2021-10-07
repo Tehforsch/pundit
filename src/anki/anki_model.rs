@@ -1,46 +1,50 @@
-use crate::named::Named;
-use crate::anki::proto::note_types::notetype::Config as NoteFieldConfig;
-use rusqlite::{Connection, params};
-use serde_derive::Deserialize;
-use serde_json::{Result, Value};
 use prost::Message;
+use rusqlite::params;
+use rusqlite::Connection;
+use serde_derive::Deserialize;
+use serde_json::Result;
+use serde_json::Value;
 
-use super::proto::note_types::{NotetypeId, notetype::Field as NoteField};
+use super::proto::note_types::notetype::Field as NoteField;
+use super::proto::note_types::NotetypeId;
+use crate::anki::proto::note_types::notetype::Config as NoteFieldConfig;
+use crate::named::Named;
 
 #[derive(Debug, Deserialize)]
 pub struct AnkiField {
-    pub name: String,               // field name,
+    pub name: String, // field name,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct AnkiCardTemplate {
     pub name: String,
-    pub ord: i64,         // template number, see flds,
+    pub ord: i64, // template number, see flds,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct AnkiModel {
     pub flds: Vec<AnkiField>,
-    pub id: i64, // model ID, matches notes.mid,
+    pub id: i64,      // model ID, matches notes.mid,
     pub name: String, // model name,
-    pub sortf: i64, // Integer specifying which field is used for sorting in the browser,
+    pub sortf: i64,   // Integer specifying which field is used for sorting in the browser,
     pub tmpls: Vec<AnkiCardTemplate>,
 }
 
 pub fn get_anki_models_from_table(connection: &Connection) -> rusqlite::Result<Vec<AnkiModel>> {
-    let mut stmt = connection.prepare(
-        "SELECT id, name, config FROM notetypes"
-    )?;
-    let mut models: Vec<AnkiModel> = stmt.query_map(params![], |row| {
-        let config = NoteFieldConfig::decode(row.get_raw(2).as_blob()?).expect("Failed to decode anki model config");
-        Ok(AnkiModel { 
-            id: row.get(0)?,
-            name: row.get(1)?,
-            sortf: config.sort_field_idx as i64,
-            tmpls: vec![],
-            flds: vec![],
-        })
-    })?.collect::<rusqlite::Result<Vec<_>>>()?;
+    let mut stmt = connection.prepare("SELECT id, name, config FROM notetypes")?;
+    let mut models: Vec<AnkiModel> = stmt
+        .query_map(params![], |row| {
+            let config = NoteFieldConfig::decode(row.get_raw(2).as_blob()?)
+                .expect("Failed to decode anki model config");
+            Ok(AnkiModel {
+                id: row.get(0)?,
+                name: row.get(1)?,
+                sortf: config.sort_field_idx as i64,
+                tmpls: vec![],
+                flds: vec![],
+            })
+        })?
+        .collect::<rusqlite::Result<Vec<_>>>()?;
     for model in models.iter_mut() {
         model.flds = get_anki_fields_from_table(connection, model.id)?;
         model.tmpls = get_anki_templates_from_table(connection, model.id)?;
@@ -48,18 +52,21 @@ pub fn get_anki_models_from_table(connection: &Connection) -> rusqlite::Result<V
     Ok(models)
 }
 
-fn get_anki_fields_from_table(connection: &Connection, id: i64) -> rusqlite::Result<Vec<AnkiField>> {
+fn get_anki_fields_from_table(
+    connection: &Connection,
+    id: i64,
+) -> rusqlite::Result<Vec<AnkiField>> {
     let mut stmt = connection.prepare("SELECT name FROM FIELDS WHERE ntid = ? ORDER BY ord")?;
-    let stmt_iterator = stmt.query_and_then([id], |row| {
-        Ok(AnkiField {
-            name: row.get(0)?,
-        })
-    })?;
+    let stmt_iterator = stmt.query_and_then([id], |row| Ok(AnkiField { name: row.get(0)? }))?;
     stmt_iterator.collect::<rusqlite::Result<Vec<_>>>()
 }
 
-fn get_anki_templates_from_table(connection: &Connection, id: i64) -> rusqlite::Result<Vec<AnkiCardTemplate>> {
-    let mut stmt = connection.prepare("SELECT ord, name FROM TEMPLATES WHERE ntid = ? ORDER BY ord")?;
+fn get_anki_templates_from_table(
+    connection: &Connection,
+    id: i64,
+) -> rusqlite::Result<Vec<AnkiCardTemplate>> {
+    let mut stmt =
+        connection.prepare("SELECT ord, name FROM TEMPLATES WHERE ntid = ? ORDER BY ord")?;
     let stmt_iterator = stmt.query_and_then([id], |row| {
         Ok(AnkiCardTemplate {
             ord: row.get(0)?,
@@ -83,7 +90,6 @@ pub fn get_anki_models_from_json(json_data: String) -> Result<Vec<AnkiModel>> {
 pub fn get_anki_model(model_value: &Value) -> Result<AnkiModel> {
     serde_json::from_value::<AnkiModel>(model_value.clone())
 }
-
 
 impl Named for AnkiModel {
     fn get_name(&self) -> &str {

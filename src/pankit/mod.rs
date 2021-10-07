@@ -2,40 +2,51 @@ pub mod pankit_note_info;
 pub mod pankit_yaml_block;
 pub mod pankit_yaml_note;
 
-use crate::{anki::{find_anki_note_in_collection}, config::{ANKI_BLOCK_NOTE_TEMPLATE, ANKI_FULL_NOTE_TEMPLATE}, named::get_by_name};
-use crate::anki::get_csum;
-use crate::anki::get_unix_time;
-use crate::anki::is_note_id_field;
-use crate::anki::update_anki_note_contents;
-use crate::args::ConflictHandling;
-use crate::config::ID_MULTIPLIER;
-use crate::fzf::select_interactively;
-use crate::note::Note;
-use crate::notes::Notes;
-use crate::{anki::anki_deck::AnkiDeck, config::ANKI_NOTE_FIELD_TEMPLATE};
-use crate::{anki::anki_model::AnkiModel};
+use std::cmp::Ordering::Equal;
+use std::cmp::Ordering::Greater;
+use std::cmp::Ordering::Less;
+use std::fs;
+use std::path::Path;
+use std::path::PathBuf;
 
-use log::{info, error};
-use anyhow::{anyhow, Context, Result};
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Result;
+use log::error;
+use log::info;
+use rand::Rng;
 use regex::Regex;
 use rusqlite::Connection;
-use std::path::Path;
-use std::{fs, path::PathBuf};
 
-use std::cmp::Ordering::{Equal, Greater, Less};
-
-use rand::Rng;
-
+use self::pankit_note_info::PankitDatabase;
 use self::pankit_note_info::PankitNoteInfo;
-use self::{pankit_note_info::PankitDatabase, pankit_yaml_block::PankitYamlBlock};
+use self::pankit_yaml_block::PankitYamlBlock;
+use crate::anki::add_anki_card;
+use crate::anki::add_anki_note;
 use crate::anki::anki_card::AnkiCard;
 use crate::anki::anki_collection::AnkiCollection;
+use crate::anki::anki_deck::AnkiDeck;
+use crate::anki::anki_model::AnkiModel;
 use crate::anki::anki_note::AnkiNote;
+use crate::anki::close_connection;
+use crate::anki::find_anki_note_in_collection;
+use crate::anki::get_csum;
+use crate::anki::get_new_anki_note_and_cards;
+use crate::anki::get_unix_time;
+use crate::anki::is_note_id_field;
+use crate::anki::read_collection;
+use crate::anki::read_notes;
+use crate::anki::update_anki_note_contents;
 use crate::anki::AnkiNoteInfo;
-use crate::anki::{
-    add_anki_card, add_anki_note, close_connection, get_new_anki_note_and_cards, read_collection,
-    read_notes,
-};
+use crate::args::ConflictHandling;
+use crate::config::ANKI_BLOCK_NOTE_TEMPLATE;
+use crate::config::ANKI_FULL_NOTE_TEMPLATE;
+use crate::config::ANKI_NOTE_FIELD_TEMPLATE;
+use crate::config::ID_MULTIPLIER;
+use crate::fzf::select_interactively;
+use crate::named::get_by_name;
+use crate::note::Note;
+use crate::notes::Notes;
 
 #[derive(Debug)]
 enum Action<'a> {
@@ -324,10 +335,8 @@ fn get_anki_info_from_note_contents(contents: String) -> Result<Vec<AnkiNoteInfo
     let mut result = vec![];
     for capture in re.captures_iter(&contents) {
         let data = capture.get(1).unwrap().as_str();
-        let block_result: Result<PankitYamlBlock> = serde_yaml::from_str(&data).context(format!(
-            "Reading note contents: {}",
-            data
-        ));
+        let block_result: Result<PankitYamlBlock> =
+            serde_yaml::from_str(&data).context(format!("Reading note contents: {}", data));
         result.extend(block_result?.into_notes()?);
     }
     Ok(result)
@@ -348,10 +357,11 @@ pub fn pankit_get_note(
     let maybe_model_and_deck = get_model_and_deck_from_note(&collection, model_filename)?;
     if let Some((model, deck)) = maybe_model_and_deck {
         print_anki_note(id, &model, &deck, false);
-    }
-    else {
-        let model = select_model_interactively(&collection).ok_or_else(|| anyhow!("No model selected"))?;
-        let deck = select_deck_interactively(&collection).ok_or_else(|| anyhow!("No deck selected"))?;
+    } else {
+        let model =
+            select_model_interactively(&collection).ok_or_else(|| anyhow!("No model selected"))?;
+        let deck =
+            select_deck_interactively(&collection).ok_or_else(|| anyhow!("No deck selected"))?;
         print_anki_note(id, &model, &deck, true);
     }
     Ok(())
@@ -361,8 +371,9 @@ fn get_model_and_deck_from_note(
     collection: &AnkiCollection,
     model_filename: Option<PathBuf>,
 ) -> Result<Option<(&AnkiModel, &AnkiDeck)>> {
-    let maybe_model_and_deck_name =
-        model_filename.and_then(|filename| get_model_and_deck_name_from_first_anki_note(filename).transpose()).transpose()?;
+    let maybe_model_and_deck_name = model_filename
+        .and_then(|filename| get_model_and_deck_name_from_first_anki_note(filename).transpose())
+        .transpose()?;
     Ok(maybe_model_and_deck_name.map(|(model_name, deck_name)| {
         let model = get_by_name(&collection.models, &model_name).unwrap();
         let deck = get_by_name(&collection.decks, &deck_name).unwrap();
@@ -370,9 +381,13 @@ fn get_model_and_deck_from_note(
     }))
 }
 
-fn get_model_and_deck_name_from_first_anki_note(filename: PathBuf) -> Result<Option<(String, String)>> {
+fn get_model_and_deck_name_from_first_anki_note(
+    filename: PathBuf,
+) -> Result<Option<(String, String)>> {
     let anki_notes = get_anki_info_from_note_contents(fs::read_to_string(&filename)?)?;
-    Ok(anki_notes.first().map(|note| (note.model_name.clone(), note.deck_name.clone())))
+    Ok(anki_notes
+        .first()
+        .map(|note| (note.model_name.clone(), note.deck_name.clone())))
 }
 
 fn print_anki_note(id: i64, model: &AnkiModel, deck: &AnkiDeck, full: bool) {

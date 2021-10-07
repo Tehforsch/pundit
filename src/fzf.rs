@@ -1,8 +1,10 @@
+use std::io::Write;
+use std::process::Command;
+use std::process::Stdio;
+use std::str;
+
 use crate::named::get_by_name;
 use crate::named::Named;
-use std::io::Write;
-use std::process::{Command, Stdio};
-use std::str;
 
 pub fn run_fzf(content: &str, args: &[&str]) -> String {
     let mut child = Command::new("fzf")

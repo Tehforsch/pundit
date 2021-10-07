@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
+use generational_arena::Index;
+
 use crate::note::Note;
 use crate::notes::Notes;
-use generational_arena::Index;
 
 pub fn get_connected_component_undirected<'a>(notes: &'a Notes, note: &'a Note) -> Vec<&'a Note> {
     let mut visited = HashMap::new();

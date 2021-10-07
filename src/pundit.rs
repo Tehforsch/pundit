@@ -1,19 +1,25 @@
 pub mod logger;
 
-use anyhow::{anyhow, Result};
-use logger::init_logger;
-use pundit::notes::Notes;
-use pundit::settings::Settings;
-use pundit::{filter_options::FilterOptions, fzf::run_fzf};
-use pundit::{note_utils::get_backlinks, notes::read_notes};
 use std::error::Error;
 use std::path::Path;
 
+use anyhow::anyhow;
+use anyhow::Result;
 use clap::Clap;
-use pundit::args::{Opts, SubCommand};
+use log::error;
+use log::info;
+use logger::init_logger;
+use pundit::args::Opts;
+use pundit::args::SubCommand;
+use pundit::filter_options::FilterOptions;
+use pundit::fzf::run_fzf;
 use pundit::graph::get_connected_component_undirected;
-use pundit::note::{create_new_note_from_title, Note};
-use log::{info, error};
+use pundit::note::create_new_note_from_title;
+use pundit::note::Note;
+use pundit::note_utils::get_backlinks;
+use pundit::notes::read_notes;
+use pundit::notes::Notes;
+use pundit::settings::Settings;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let mut args = get_args();
@@ -251,7 +257,9 @@ fn run(args: Opts, mut notes: &mut Notes) -> Result<()> {
         SubCommand::Pankit(l) => {
             pundit::pankit::update_anki(&l.database, &l.pankit_db, &notes, l.conflict_handling)?
         }
-        SubCommand::PankitGetNote(l) => pundit::pankit::pankit_get_note(&l.database, l.model_filename)?,
+        SubCommand::PankitGetNote(l) => {
+            pundit::pankit::pankit_get_note(&l.database, l.model_filename)?
+        }
         SubCommand::Journal(l) => {
             pundit::journal::run_journal(&mut notes, &l)?;
         }
