@@ -67,9 +67,14 @@ fn list_notes(notes: &Notes, filter: Option<FilterOptions>) {
     }
 }
 
-fn list_backlinks(notes: &Notes, note: &Note) {
+fn list_backlinks(notes: &Notes, note: &Note, show_path: bool) {
     for link in get_backlinks(notes, note) {
-        info!("{}", link.title);
+        if show_path {
+            link.show_filename();
+        }
+        else {
+            info!("{}", link.title);
+        }
     }
 }
 
@@ -215,7 +220,7 @@ fn run(args: Opts, mut notes: &mut Notes) -> Result<()> {
         }
         SubCommand::ListBacklinks(l) => {
             let note = find_by_filename(notes, &l.filename)?;
-            list_backlinks(&notes, &note);
+            list_backlinks(&notes, &note, l.show_path);
         }
         SubCommand::Backlinks(l) => {
             let note = find_by_filename(notes, &l.filename)?;

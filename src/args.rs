@@ -74,6 +74,9 @@ pub struct GetLinkText {
 pub struct ListBacklinks {
     /// The filename for which to show the backlinks
     pub filename: PathBuf,
+    /// When set, show the path of the notes instead of the title
+    #[clap(long)]
+    pub show_path: bool,
 }
 
 #[derive(Clap, Debug)]
