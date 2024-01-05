@@ -1,11 +1,11 @@
 use std::path::Path;
 
-use clap::Clap;
+use clap::Parser;
 
 use crate::dir_utils::get_relative_path;
 use crate::note::Note;
 /// Various options for filtering lists of notes
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub enum FilterOptions {
     IncludeAll,
     FilterSubfolders(FilterSubfolders),
@@ -40,7 +40,7 @@ fn note_is_in_subfolder(base_folder: &Path, subfolder: &Path, note: &Note) -> bo
     relative_path == subfolder
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct FilterSubfolders {
     filter: Vec<String>,
 }

@@ -5,7 +5,7 @@ pub mod named;
 use std::error::Error;
 
 use anyhow::Result;
-use clap::Clap;
+use clap::Parser;
 use log::info;
 use logger::init_logger;
 use rusqlite::Connection;

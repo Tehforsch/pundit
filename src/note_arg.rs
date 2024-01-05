@@ -1,11 +1,11 @@
 use std::path::PathBuf;
 
-use clap::Clap;
+use clap::Parser;
 
 use crate::note::Note;
 use crate::notes::Notes;
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct NoteArg {
     pub filename: PathBuf,
 }

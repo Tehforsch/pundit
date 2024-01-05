@@ -4,7 +4,6 @@ use std::path::PathBuf;
 
 use anyhow::Context;
 use anyhow::Result;
-use clap::crate_name;
 use dirs_next::config_dir;
 use serde::Deserialize;
 
@@ -15,7 +14,7 @@ pub struct Settings {
 
 impl Settings {
     pub fn from_default_location() -> Option<Self> {
-        let file = config_dir()?.join(crate_name!()).join("settings.yaml");
+        let file = config_dir()?.join("pundit").join("settings.yaml");
         let handle = File::open(&file).ok()?;
 
         let result = serde_yaml::from_reader(handle);

@@ -1,14 +1,14 @@
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use clap::Clap;
+use clap::Parser;
 
 use crate::filter_options::FilterOptions;
 use crate::journal_opts::JournalOpts;
 use crate::paper_opts::PaperOpts;
 
 /// Manage notes and links between them.
-#[derive(Clap)]
+#[derive(Parser)]
 #[clap(version = "0.1.0", author = "Toni Peter")]
 pub struct Opts {
     #[clap(subcommand)]
@@ -26,7 +26,7 @@ pub struct Opts {
     pub add_identifier: bool,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub enum SubCommand {
     List(ListNotes),
     Link(GetLinkTextInteractively),
@@ -46,14 +46,14 @@ pub enum SubCommand {
 }
 
 /// List notes.
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct ListNotes {
     #[clap(subcommand)]
     pub filter: Option<FilterOptions>,
 }
 
 /// Interactively choose note 2 and then display a (relative) link from note 1 to note 2.
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct GetLinkTextInteractively {
     pub note1: PathBuf,
     #[clap(subcommand)]
@@ -61,7 +61,7 @@ pub struct GetLinkTextInteractively {
 }
 
 /// Display a (relative) link from note 1 to note 2.
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct GetLinkText {
     /// The filename in which the file is going to be written to
     pub note1: PathBuf,
@@ -70,7 +70,7 @@ pub struct GetLinkText {
 }
 
 /// List all notes that contain a link to the note
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct ListBacklinks {
     /// The filename for which to show the backlinks
     pub filename: PathBuf,
@@ -79,7 +79,7 @@ pub struct ListBacklinks {
     pub show_path: bool,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 /// Interactively select a note out of all notes that contain a link to the note
 pub struct FindBacklinks {
     /// The filename for which to show the backlinks
@@ -87,28 +87,28 @@ pub struct FindBacklinks {
 }
 
 /// Select a note from the list of all notes via fzf
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct FindNoteInteractively {
     #[clap(subcommand)]
     pub filter: Option<FilterOptions>,
 }
 
 /// Create a new note with a given title (first ensure that it does not exist already).
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct NewNote {
     /// Optional: Only list notes which contain this string in the title
     pub title: String,
 }
 
 /// Delete a note. This will only delete the note if no other notes link to it. Otherwise it will print a list of notes linking to this note.
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct DeleteNote {
     /// The path to the note which to delete
     pub filename: PathBuf,
 }
 
 /// Rename a note
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct RenameNote {
     /// The path to the note which to rename
     pub filename: PathBuf,
@@ -116,21 +116,21 @@ pub struct RenameNote {
 }
 
 /// Select a note interactively from the graph component for a specific note
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct FindGraph {
     /// The path of the note
     pub filename: PathBuf,
 }
 
 /// List all notes in the graph component for a specific note
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct ListGraph {
     /// The path of the note
     pub filename: PathBuf,
 }
 
 /// Update the anki contents from the notes.
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct Pankit {
     /// The path of the anki database to update
     pub database: PathBuf,
@@ -157,7 +157,7 @@ impl FromStr for ConflictHandling {
 }
 
 /// Add a pankit note by generating an id, allowing to interactively select model/deck and adding empty entries for all the fields.
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct PankitGetNote {
     /// The path of the anki database to get available model and fields from.
     pub database: PathBuf,
@@ -166,7 +166,7 @@ pub struct PankitGetNote {
     pub model_filename: Option<PathBuf>,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub enum ConflictHandling {
     /// Show an error if any conflict is encountered. Do not change anything in the database
     GiveError,

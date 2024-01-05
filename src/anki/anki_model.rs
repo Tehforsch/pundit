@@ -5,8 +5,6 @@ use serde_derive::Deserialize;
 use serde_json::Result;
 use serde_json::Value;
 
-use super::proto::note_types::notetype::Field as NoteField;
-use super::proto::note_types::NotetypeId;
 use crate::anki::proto::note_types::notetype::Config as NoteFieldConfig;
 use crate::named::Named;
 

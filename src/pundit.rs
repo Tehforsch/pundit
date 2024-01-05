@@ -5,7 +5,7 @@ use std::path::Path;
 
 use anyhow::anyhow;
 use anyhow::Result;
-use clap::Clap;
+use clap::Parser;
 use log::error;
 use log::info;
 use logger::init_logger;
@@ -71,8 +71,7 @@ fn list_backlinks(notes: &Notes, note: &Note, show_path: bool) {
     for link in get_backlinks(notes, note) {
         if show_path {
             link.show_filename();
-        }
-        else {
+        } else {
             info!("{}", link.title);
         }
     }

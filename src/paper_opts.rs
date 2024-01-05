@@ -1,16 +1,16 @@
 use std::path::PathBuf;
 
-use clap::Clap;
+use clap::Parser;
 
 /// Create and find note files for papers from a bibtex file
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct PaperOpts {
     pub bibtex_file: PathBuf,
     #[clap(subcommand)]
     pub subcmd: PaperSubCommand,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub enum PaperSubCommand {
     List,
     Find,

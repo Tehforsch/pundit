@@ -29,11 +29,11 @@ impl PankitYamlBlock {
                     model_name: note
                         .model
                         .or(default_model.clone())
-                        .ok_or_else(|| anyhow!("No model specified for card: {}"))?,
+                        .ok_or_else(|| anyhow!("No model specified for card."))?,
                     deck_name: note
                         .deck
                         .or(default_deck.clone())
-                        .ok_or_else(|| anyhow!("No deck specified for card: {}"))?,
+                        .ok_or_else(|| anyhow!("No deck specified for card."))?,
                 })
             })
             .collect()

@@ -1,9 +1,9 @@
-use clap::Clap;
+use clap::Parser;
 
 use crate::note_arg::NoteArg;
 
 /// Open notes from a journal - date based notes.
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct JournalOpts {
     /// Name of the journal to open
     pub name: String,
@@ -15,7 +15,7 @@ pub struct JournalOpts {
     pub subcmd: JournalSubCommand,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub enum JournalSubCommand {
     // Find,
     /// Open the note for yesterday

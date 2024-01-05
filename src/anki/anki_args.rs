@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
-use clap::Clap;
+use clap::Parser;
 
 /// Read and write anki databases
-#[derive(Clap)]
+#[derive(Parser)]
 #[clap(version = "0.1.0", author = "Toni Peter")]
 pub struct AnkiOpts {
     /// A level of verbosity, and can be used multiple times
@@ -15,7 +15,7 @@ pub struct AnkiOpts {
     pub database_path: PathBuf,
 }
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub enum AnkiSubCommand {
     ListModels(ListModels),
     ListDecks(ListDecks),
@@ -24,21 +24,21 @@ pub enum AnkiSubCommand {
 }
 
 /// List all the models (note types) in the anki database
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct ListModels {}
 
 /// List all the models (note types) in the anki database
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct ListDecks {}
 
 /// List all the fields for a given model (note type)
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct ListFields {
     pub model: String,
 }
 
 /// List all the card templates for a given model (note type)
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 pub struct ListTemplates {
     pub model: String,
 }

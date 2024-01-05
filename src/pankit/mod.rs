@@ -414,7 +414,6 @@ fn print_anki_note(id: i64, model: &AnkiModel, deck: &AnkiDeck, full: bool) {
     let result = format!(
         "{}",
         template
-            .clone()
             .replace("{id}", &format!("{}", id))
             .replace("{model}", &model.name)
             .replace("{deck}", &deck.name)
